@@ -2,27 +2,42 @@
 import Link from "next/link";
 import { useTheme } from "./ThemeContext";
 
+const links = [
+  { href: "/", label: "Home" },
+  { href: "/about", label: "About" },
+  { href: "/dashboard", label: "Dashboard" },
+  { href: "/login", label: "Login" },
+];
+
 export default function Navbar() {
   const { theme, toggleTheme } = useTheme();
 
   return (
-    <nav className="sticky top-0 z-50 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-gray-100 dark:border-slate-800">
+    <nav className="sticky top-0 z-50 bg-cream/80 dark:bg-bark/80 backdrop-blur-md border-b border-sand dark:border-bark-soft">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           <div className="flex-shrink-0">
-            <Link href="/" className="text-2xl font-bold text-emerald-600">
-              EchoLodge
+            <Link
+              href="/"
+              className="font-display text-2xl font-semibold tracking-tight text-forest dark:text-moss"
+            >
+              Echo<span className="text-clay">Lodge</span>
             </Link>
           </div>
-          <div className="flex items-center space-x-6">
-            <Link href="/" className="text-gray-600 dark:text-gray-300 hover:text-emerald-600 dark:hover:text-emerald-400 font-medium">Home</Link>
-            <Link href="/about" className="text-gray-600 dark:text-gray-300 hover:text-emerald-600 dark:hover:text-emerald-400 font-medium">About</Link>
-            <Link href="/dashboard" className="text-gray-600 dark:text-gray-300 hover:text-emerald-600 dark:hover:text-emerald-400 font-medium">Dashboard</Link>
-            <Link href="/login" className="text-gray-600 dark:text-gray-300 hover:text-emerald-600 dark:hover:text-emerald-400 font-medium">Login</Link>
-            <button 
+          <div className="flex items-center gap-1 sm:gap-2">
+            {links.map((link) => (
+              <Link
+                key={link.href}
+                href={link.href}
+                className="px-3 py-2 rounded-full text-sm font-medium text-ink-soft dark:text-parchment/70 hover:text-forest dark:hover:text-moss hover:bg-sand/60 dark:hover:bg-bark-soft transition-colors"
+              >
+                {link.label}
+              </Link>
+            ))}
+            <button
               onClick={toggleTheme}
-              className="p-2 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors focus:outline-none"
-              aria-label="Toggle Theme"
+              className="ml-1 p-2 rounded-full bg-sand dark:bg-bark-soft text-forest dark:text-moss hover:bg-parchment dark:hover:bg-bark hover:ring-2 hover:ring-clay/40 transition-all focus:outline-none focus:ring-2 focus:ring-clay/50"
+              aria-label="Toggle theme"
             >
               {theme === "dark" ? (
                 // Sun icon

@@ -1,27 +1,52 @@
 @import "tailwindcss";
 @custom-variant dark (&:is(.dark *));
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+/*
+  EchoLodge design system — "Organic & Warm"
+  Earthy, boutique palette: cream/sand surfaces, deep forest green + terracotta
+  clay accents. Class-based dark mode only (see @custom-variant above); the old
+  prefers-color-scheme block was removed so it no longer fights the .dark toggle.
+*/
+@theme {
+  /* Brand palette */
+  --color-cream: #faf5ec;
+  --color-sand: #f1e7d5;
+  --color-clay: #c2683f;
+  --color-clay-dark: #a5502c;
+  --color-forest: #2f5d50;
+  --color-forest-light: #3d7565;
+  --color-moss: #6b8f71;
+  --color-bark: #2a231d;
+  --color-bark-soft: #3a322a;
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
+  /* Warm neutrals for text/borders */
+  --color-ink: #2d2620;
+  --color-ink-soft: #6b5f52;
+  --color-parchment: #efe6d6;
+
+  /* Fonts */
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+  --font-display: var(--font-fraunces);
+
+  /* Semantic surface tokens (light defaults) */
+  --color-surface: #ffffff;
+  --color-canvas: #faf5ec;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+/* Warm dark theme: espresso/bark instead of cold slate */
+.dark {
+  --color-surface: #211b15;
+  --color-canvas: #171310;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background-color: var(--color-canvas);
+  font-family: var(--font-sans), Arial, Helvetica, sans-serif;
+}
+
+/* Subtle, calming default for section rhythm */
+::selection {
+  background-color: var(--color-clay);
+  color: #fff;
 }
