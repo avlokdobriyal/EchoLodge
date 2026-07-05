@@ -66,4 +66,4 @@ Another developer can point this project at their own database in three steps:
 
 ### Schema Diagram
 
-![Database Schema](./W5_SchemaDiagram.png)
+![Database Schema](./W5_SchemaDiagram_TBI-26101274.png)
