@@ -1,7 +1,9 @@
 "use client";
 import { useState, useEffect } from "react";
+import { useSession } from "next-auth/react";
 import { Button, Loader, Modal, notify } from "@/components/ui/index.js";
 import ReviewForm from "@/components/ReviewForm";
+import RequireAuth from "@/components/RequireAuth";
 
 const API = "http://localhost:5000/api/reviews";
 
@@ -19,35 +21,45 @@ function formatDate(value) {
 }
 
 // --- API helpers ---------------------------------------------------------
+// Write helpers take the backend JWT and send it as a Bearer token.
+function authHeaders(token) {
+  return { "Content-Type": "application/json", Authorization: `Bearer ${token}` };
+}
+
 async function apiList() {
   const res = await fetch(API);
   if (!res.ok) throw new Error("Failed to load reviews");
   return res.json();
 }
-async function apiCreate(data) {
+async function apiCreate(data, token) {
   const res = await fetch(API, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: authHeaders(token),
     body: JSON.stringify(data),
   });
   if (!res.ok) throw new Error("Failed to create review");
   return res.json();
 }
-async function apiUpdate(id, data) {
+async function apiUpdate(id, data, token) {
   const res = await fetch(`${API}/${id}`, {
     method: "PUT",
-    headers: { "Content-Type": "application/json" },
+    headers: authHeaders(token),
     body: JSON.stringify(data),
   });
   if (!res.ok) throw new Error("Failed to update review");
   return res.json();
 }
-async function apiDelete(id) {
-  const res = await fetch(`${API}/${id}`, { method: "DELETE" });
+async function apiDelete(id, token) {
+  const res = await fetch(`${API}/${id}`, {
+    method: "DELETE",
+    headers: { Authorization: `Bearer ${token}` },
+  });
   if (!res.ok) throw new Error("Failed to delete review");
 }
 
-export default function DashboardPage() {
+function DashboardContent() {
+  const { data: session } = useSession();
+  const token = session?.backendToken;
   const [reviews, setReviews] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
@@ -74,7 +86,7 @@ export default function DashboardPage() {
   // --- CRUD handlers (update local state, no full reload) ---------------
   const handleCreate = async (data) => {
     try {
-      const created = await apiCreate(data);
+      const created = await apiCreate(data, token);
       setReviews((prev) => [created, ...prev]);
       setIsCreateOpen(false);
       notify("Review added", "success");
@@ -85,7 +97,7 @@ export default function DashboardPage() {
 
   const handleUpdate = async (id, data) => {
     try {
-      const updated = await apiUpdate(id, data);
+      const updated = await apiUpdate(id, data, token);
       setReviews((prev) => prev.map((r) => (r.id === id ? updated : r)));
       setEditingId(null);
       notify("Review updated", "success");
@@ -98,7 +110,7 @@ export default function DashboardPage() {
     if (!window.confirm("Delete this review? This cannot be undone.")) return;
     setDeletingId(id);
     try {
-      await apiDelete(id);
+      await apiDelete(id, token);
       setReviews((prev) => prev.filter((r) => r.id !== id));
       notify("Review deleted", "success");
     } catch (error) {
@@ -217,5 +229,13 @@ export default function DashboardPage() {
         />
       </Modal>
     </div>
+  );
+}
+
+export default function DashboardPage() {
+  return (
+    <RequireAuth>
+      <DashboardContent />
+    </RequireAuth>
   );
 }

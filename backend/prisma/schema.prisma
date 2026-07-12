@@ -8,6 +8,15 @@ datasource db {
   directUrl = env("DIRECT_URL")
 }
 
+model User {
+  id        Int      @id @default(autoincrement())
+  email     String   @unique
+  password  String?  // nullable: OAuth (Google) users have no local password
+  name      String?
+  createdAt DateTime @default(now())
+  reviews   Review[]
+}
+
 model Review {
   id          Int      @id @default(autoincrement())
   guestName   String
@@ -15,4 +24,8 @@ model Review {
   reviewText  String
   sentiment   String
   createdAt   DateTime @default(now())
+  // nullable so existing rows survive the migration; new reviews are stamped
+  // with the authenticated user.
+  authorId    Int?
+  author      User?    @relation(fields: [authorId], references: [id])
 }

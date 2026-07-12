@@ -5,8 +5,11 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Button, Input, notify } from "@/components/ui/index.js";
 
-export default function LoginPage() {
+const BACKEND = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
+
+export default function RegisterPage() {
     const router = useRouter();
+    const [name, setName] = useState("");
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [errors, setErrors] = useState({});
@@ -28,24 +31,42 @@ export default function LoginPage() {
         if (Object.keys(next).length > 0) return;
 
         setSubmitting(true);
-        const res = await signIn("credentials", { email, password, redirect: false });
-        setSubmitting(false);
+        try {
+            const res = await fetch(`${BACKEND}/api/auth/register`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ name, email, password }),
+            });
+            const data = await res.json();
 
-        if (res?.error) {
-            notify("Invalid email or password", "error");
-            return;
+            if (!res.ok) {
+                notify(data.error || "Registration failed", "error");
+                setSubmitting(false);
+                return;
+            }
+
+            // Account created — sign the user straight in via credentials.
+            const login = await signIn("credentials", { email, password, redirect: false });
+            if (login?.error) {
+                notify("Account created — please sign in", "success");
+                router.push("/login");
+                return;
+            }
+            notify("Account created — welcome to EchoLodge!", "success");
+            router.push("/dashboard");
+        } catch {
+            notify("Something went wrong. Is the backend running?", "error");
+            setSubmitting(false);
         }
-        notify("Welcome back!", "success");
-        router.push("/dashboard");
     };
 
     return (
         <div className="max-w-md mx-auto px-4 py-24">
             <div className="text-center mb-8">
-                <p className="text-sm font-medium uppercase tracking-wider text-clay">Staff portal</p>
-                <h1 className="mt-2 font-display text-4xl font-semibold text-ink dark:text-parchment">Welcome back</h1>
+                <p className="text-sm font-medium uppercase tracking-wider text-clay">Join EchoLodge</p>
+                <h1 className="mt-2 font-display text-4xl font-semibold text-ink dark:text-parchment">Create your account</h1>
                 <p className="mt-3 text-ink-soft dark:text-parchment/70">
-                    Authenticate to manage bookings and reviews.
+                    Set up access to manage your homestay reviews.
                 </p>
             </div>
 
@@ -54,6 +75,13 @@ export default function LoginPage() {
                 noValidate
                 className="rounded-3xl bg-surface dark:bg-bark-soft border border-sand dark:border-bark-soft shadow-sm p-8 space-y-5"
             >
+                <Input
+                    label="Name"
+                    type="text"
+                    placeholder="Your name"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                />
                 <Input
                     label="Email"
                     type="email"
@@ -65,13 +93,13 @@ export default function LoginPage() {
                 <Input
                     label="Password"
                     type="password"
-                    placeholder="••••••••"
+                    placeholder="At least 6 characters"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     error={errors.password}
                 />
                 <Button type="submit" size="lg" disabled={submitting} className="w-full">
-                    {submitting ? "Signing in…" : "Sign in"}
+                    {submitting ? "Creating account…" : "Create account"}
                 </Button>
 
                 <div className="flex items-center gap-3 py-1">
@@ -95,9 +123,9 @@ export default function LoginPage() {
                 </button>
 
                 <p className="text-center text-sm text-ink-soft dark:text-parchment/70">
-                    New here?{" "}
-                    <Link href="/register" className="text-forest dark:text-moss font-medium hover:underline">
-                        Create an account
+                    Already have an account?{" "}
+                    <Link href="/login" className="text-forest dark:text-moss font-medium hover:underline">
+                        Sign in
                     </Link>
                 </p>
             </form>

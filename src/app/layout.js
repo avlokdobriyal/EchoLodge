@@ -4,6 +4,7 @@ import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import { ThemeProvider } from "../components/ThemeContext";
 import { ToastProvider } from "../components/ui/Toast";
+import SessionProvider from "../components/SessionProvider";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -48,13 +49,15 @@ export default function RootLayout({ children }) {
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>
       <body className="flex flex-col min-h-screen transition-colors duration-300 bg-cream dark:bg-bark text-ink dark:text-parchment">
-        <ThemeProvider>
-          <ToastProvider>
-            <Navbar />
-            <main className="flex-grow">{children}</main>
-            <Footer />
-          </ToastProvider>
-        </ThemeProvider>
+        <SessionProvider>
+          <ThemeProvider>
+            <ToastProvider>
+              <Navbar />
+              <main className="flex-grow">{children}</main>
+              <Footer />
+            </ToastProvider>
+          </ThemeProvider>
+        </SessionProvider>
       </body>
     </html>
   );

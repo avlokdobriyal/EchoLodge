@@ -1,9 +1,9 @@
 const express = require('express');
 const cors = require('cors');
 require('dotenv').config();
-const { PrismaClient } = require('@prisma/client');
-
-const prisma = new PrismaClient();
+const prisma = require('./lib/prisma');
+const authRoutes = require('./routes/auth');
+const requireAuth = require('./middleware/requireAuth');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -11,6 +11,9 @@ const PORT = process.env.PORT || 5000;
 // Middleware
 app.use(cors({ origin: process.env.FRONTEND_URL || 'http://localhost:3000' }));
 app.use(express.json());
+
+// Auth routes (rate limiting is applied inside the router).
+app.use('/api/auth', authRoutes);
 
 // Routes
 
@@ -63,15 +66,15 @@ app.get('/api/reviews/:id', async (req, res, next) => {
   }
 });
 
-// 4. POST /api/reviews - Create a new review.
-app.post('/api/reviews', async (req, res, next) => {
+// 4. POST /api/reviews - Create a new review. (Protected)
+app.post('/api/reviews', requireAuth, async (req, res, next) => {
   const { guestName, roomType, reviewText, sentiment } = req.body;
   if (!guestName || !roomType || !reviewText || !sentiment) {
     return res.status(400).json({ error: 'All fields (guestName, roomType, reviewText, sentiment) are required' });
   }
   try {
     const newReview = await prisma.review.create({
-      data: { guestName, roomType, reviewText, sentiment },
+      data: { guestName, roomType, reviewText, sentiment, authorId: req.user.id },
     });
     res.status(201).json(newReview);
   } catch (err) {
@@ -79,8 +82,8 @@ app.post('/api/reviews', async (req, res, next) => {
   }
 });
 
-// 5. PUT /api/reviews/:id - Update a review completely.
-app.put('/api/reviews/:id', async (req, res, next) => {
+// 5. PUT /api/reviews/:id - Update a review completely. (Protected)
+app.put('/api/reviews/:id', requireAuth, async (req, res, next) => {
   const reviewId = parseInt(req.params.id);
   const { guestName, roomType, reviewText, sentiment } = req.body;
 
@@ -106,8 +109,8 @@ app.put('/api/reviews/:id', async (req, res, next) => {
   }
 });
 
-// 6. DELETE /api/reviews/:id - Delete a review.
-app.delete('/api/reviews/:id', async (req, res, next) => {
+// 6. DELETE /api/reviews/:id - Delete a review. (Protected)
+app.delete('/api/reviews/:id', requireAuth, async (req, res, next) => {
   const reviewId = parseInt(req.params.id);
   try {
     const existing = Number.isNaN(reviewId)

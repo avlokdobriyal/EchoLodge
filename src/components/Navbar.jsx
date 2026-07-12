@@ -1,16 +1,22 @@
 "use client";
 import Link from "next/link";
+import { useSession, signOut } from "next-auth/react";
 import { useTheme } from "./ThemeContext";
 
-const links = [
+const baseLinks = [
   { href: "/", label: "Home" },
   { href: "/about", label: "About" },
   { href: "/dashboard", label: "Dashboard" },
-  { href: "/login", label: "Login" },
 ];
 
 export default function Navbar() {
   const { theme, toggleTheme } = useTheme();
+  const { status } = useSession();
+  const authed = status === "authenticated";
+
+  const links = authed
+    ? [...baseLinks, { href: "/profile", label: "Profile" }]
+    : [...baseLinks, { href: "/login", label: "Login" }];
 
   return (
     <nav className="sticky top-0 z-50 bg-cream/80 dark:bg-bark/80 backdrop-blur-md border-b border-sand dark:border-bark-soft">
@@ -51,6 +57,14 @@ export default function Navbar() {
                 </svg>
               )}
             </button>
+            {authed && (
+              <button
+                onClick={() => signOut({ callbackUrl: "/login" })}
+                className="ml-1 px-3 py-2 rounded-full text-sm font-medium text-clay hover:bg-clay/10 transition-colors focus:outline-none focus:ring-2 focus:ring-clay/50"
+              >
+                Logout
+              </button>
+            )}
           </div>
         </div>
       </div>
