@@ -6,16 +6,22 @@ import { useTheme } from "./ThemeContext";
 const baseLinks = [
   { href: "/", label: "Home" },
   { href: "/about", label: "About" },
+  { href: "/rooms", label: "Rooms" },
   { href: "/dashboard", label: "Dashboard" },
 ];
 
 export default function Navbar() {
   const { theme, toggleTheme } = useTheme();
-  const { status } = useSession();
+  const { data: session, status } = useSession();
   const authed = status === "authenticated";
+  const isAdmin = session?.user?.role === "ADMIN";
 
   const links = authed
-    ? [...baseLinks, { href: "/profile", label: "Profile" }]
+    ? [
+        ...baseLinks,
+        ...(isAdmin ? [{ href: "/admin/rooms", label: "Admin" }] : []),
+        { href: "/profile", label: "Profile" },
+      ]
     : [...baseLinks, { href: "/login", label: "Login" }];
 
   return (

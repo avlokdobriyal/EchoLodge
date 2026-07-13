@@ -28,6 +28,7 @@ export const authOptions = {
           id: String(data.user.id),
           email: data.user.email,
           name: data.user.name,
+          role: data.user.role || "USER",
           backendToken: data.token,
         };
       },
@@ -55,6 +56,7 @@ export const authOptions = {
           // Stash the backend token on the user object for the jwt() callback.
           user.backendToken = data.token;
           user.id = String(data.user.id);
+          user.role = data.user.role || "USER";
         } catch {
           return false;
         }
@@ -65,13 +67,17 @@ export const authOptions = {
       if (user?.backendToken) {
         token.backendToken = user.backendToken;
         token.userId = user.id;
+        token.role = user.role || "USER";
       }
       return token;
     },
     async session({ session, token }) {
       // Expose the backend JWT to the client so it can call protected routes.
       session.backendToken = token.backendToken;
-      if (session.user) session.user.id = token.userId;
+      if (session.user) {
+        session.user.id = token.userId;
+        session.user.role = token.role || "USER";
+      }
       return session;
     },
   },

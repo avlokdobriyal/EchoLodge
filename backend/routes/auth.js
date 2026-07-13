@@ -39,7 +39,7 @@ const oauthSchema = z.object({
 
 function signToken(user) {
   return jwt.sign(
-    { sub: user.id, email: user.email },
+    { sub: user.id, email: user.email, role: user.role },
     process.env.JWT_SECRET,
     { expiresIn: JWT_EXPIRES_IN }
   );
@@ -47,7 +47,13 @@ function signToken(user) {
 
 // Strip the password before returning a user over the wire.
 function safeUser(user) {
-  return { id: user.id, email: user.email, name: user.name, createdAt: user.createdAt };
+  return {
+    id: user.id,
+    email: user.email,
+    name: user.name,
+    role: user.role,
+    createdAt: user.createdAt,
+  };
 }
 
 // --- POST /api/auth/register --------------------------------------------

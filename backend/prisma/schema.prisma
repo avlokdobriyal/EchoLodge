@@ -13,8 +13,12 @@ model User {
   email     String   @unique
   password  String?  // nullable: OAuth (Google) users have no local password
   name      String?
+  // "USER" or "ADMIN". Stored as a plain string for portability; the app only
+  // ever grants elevated access when this exactly equals "ADMIN".
+  role      String   @default("USER")
   createdAt DateTime @default(now())
   reviews   Review[]
+  bookings  Booking[]
 }
 
 model Review {
@@ -28,4 +32,30 @@ model Review {
   // with the authenticated user.
   authorId    Int?
   author      User?    @relation(fields: [authorId], references: [id])
+}
+
+model Room {
+  id            Int       @id @default(autoincrement())
+  name          String
+  category      String
+  description   String
+  pricePerNight Float
+  createdAt     DateTime  @default(now())
+  bookings      Booking[]
+}
+
+model Booking {
+  id           Int      @id @default(autoincrement())
+  userId       Int
+  user         User     @relation(fields: [userId], references: [id])
+  roomId       Int
+  room         Room     @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  checkInDate  DateTime
+  checkOutDate DateTime
+  totalPrice   Float
+  status       String   @default("CONFIRMED")
+  createdAt    DateTime @default(now())
+
+  @@index([roomId])
+  @@index([userId])
 }

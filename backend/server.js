@@ -3,6 +3,8 @@ const cors = require('cors');
 require('dotenv').config();
 const prisma = require('./lib/prisma');
 const authRoutes = require('./routes/auth');
+const roomRoutes = require('./routes/rooms');
+const bookingRoutes = require('./routes/bookings');
 const requireAuth = require('./middleware/requireAuth');
 
 const app = express();
@@ -14,6 +16,10 @@ app.use(express.json());
 
 // Auth routes (rate limiting is applied inside the router).
 app.use('/api/auth', authRoutes);
+
+// Room + booking routes (per-route auth/admin guards applied inside each router).
+app.use('/api/rooms', roomRoutes);
+app.use('/api/bookings', bookingRoutes);
 
 // Routes
 
