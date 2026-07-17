@@ -5,6 +5,7 @@ const prisma = require('./lib/prisma');
 const authRoutes = require('./routes/auth');
 const roomRoutes = require('./routes/rooms');
 const bookingRoutes = require('./routes/bookings');
+const aiRoutes = require('./routes/ai');
 const requireAuth = require('./middleware/requireAuth');
 
 const app = express();
@@ -20,6 +21,9 @@ app.use('/api/auth', authRoutes);
 // Room + booking routes (per-route auth/admin guards applied inside each router).
 app.use('/api/rooms', roomRoutes);
 app.use('/api/bookings', bookingRoutes);
+
+// AI concierge routes (requireAuth applied inside the router).
+app.use('/api/ai', aiRoutes);
 
 // Routes
 

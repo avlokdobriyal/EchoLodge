@@ -19,6 +19,7 @@ export default function Navbar() {
   const links = authed
     ? [
         ...baseLinks,
+        { href: "/concierge", label: "Concierge" },
         ...(isAdmin ? [{ href: "/admin/rooms", label: "Admin" }] : []),
         { href: "/profile", label: "Profile" },
       ]
