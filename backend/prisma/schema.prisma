@@ -40,6 +40,7 @@ model Review {
   suggestedReply String? // AI draft reply, admin-only
   adminReply     String? // the reply the admin actually published
   adminReplied   Boolean  @default(false)
+  repliedAt      DateTime? // when the admin published (or last updated) the reply
 }
 
 model Room {

@@ -103,6 +103,11 @@ function ReviewCard({ review, token, onPublished }) {
         <div className="flex items-center justify-between mb-2">
           <label className="text-sm font-medium text-ink dark:text-parchment">
             {review.adminReplied ? "Published reply" : "Reply to guest"}
+            {review.adminReplied && formatDate(review.repliedAt) && (
+              <span className="ml-2 text-xs font-normal text-ink-soft/70 dark:text-parchment/50">
+                · {formatDate(review.repliedAt)}
+              </span>
+            )}
           </label>
           {!review.adminReplied && review.suggestedReply && (
             <span className="text-xs text-ink-soft/70 dark:text-parchment/40">

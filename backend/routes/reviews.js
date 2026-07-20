@@ -23,7 +23,7 @@ const replySchema = z.object({
 });
 
 // The shape non-admin callers see: internal AI fields (aiTags, suggestedReply)
-// are stripped; the published adminReply and sentiment remain visible.
+// are stripped; the published adminReply, repliedAt and sentiment remain visible.
 function toPublic(review) {
   const { aiTags, suggestedReply, ...publicFields } = review;
   return publicFields;
@@ -182,7 +182,7 @@ router.post('/:id/reply', requireAuth, requireAdmin, async (req, res, next) => {
 
     const updated = await prisma.review.update({
       where: { id: reviewId },
-      data: { adminReply: parsed.data.reply, adminReplied: true },
+      data: { adminReply: parsed.data.reply, adminReplied: true, repliedAt: new Date() },
     });
     res.status(200).json(updated);
   } catch (err) {

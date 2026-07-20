@@ -1,6 +1,7 @@
 const express = require('express');
 const cors = require('cors');
-require('dotenv').config();
+// quiet: dotenv v17 prints promotional "tips" to stdout on every load
+require('dotenv').config({ quiet: true });
 const prisma = require('./lib/prisma');
 const authRoutes = require('./routes/auth');
 const reviewRoutes = require('./routes/reviews');

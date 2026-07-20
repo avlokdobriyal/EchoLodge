@@ -181,6 +181,25 @@ function DashboardContent() {
                   &ldquo;{review.reviewText}&rdquo;
                 </p>
 
+                {/* Published admin reply — travels with the public payload */}
+                {review.adminReplied && review.adminReply && (
+                  <div className="mt-4 pl-4 border-l-2 border-forest/50 dark:border-moss/50">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-semibold uppercase tracking-wider text-forest dark:text-moss">
+                        Response from EchoLodge
+                      </span>
+                      {formatDate(review.repliedAt) && (
+                        <span className="text-xs text-ink-soft/70 dark:text-parchment/50">
+                          · {formatDate(review.repliedAt)}
+                        </span>
+                      )}
+                    </div>
+                    <p className="mt-1 text-sm text-ink-soft dark:text-parchment/70 leading-relaxed">
+                      {review.adminReply}
+                    </p>
+                  </div>
+                )}
+
                 <div className="mt-6 flex items-center justify-between gap-3 pt-4 border-t border-sand dark:border-bark">
                   {formatDate(review.createdAt) ? (
                     <span className="text-xs text-ink-soft/80 dark:text-parchment/50">
