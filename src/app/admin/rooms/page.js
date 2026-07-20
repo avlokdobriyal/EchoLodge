@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useSession } from "next-auth/react";
 import { Button, Input, Loader, notify } from "@/components/ui/index.js";
 import RequireAdmin from "@/components/RequireAdmin";
+import AdminTabs from "@/components/AdminTabs";
 
 const API = "http://localhost:5000/api/rooms";
 
@@ -118,6 +119,7 @@ function AdminRoomsContent() {
 
   return (
     <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
+      <AdminTabs />
       <div className="mb-10">
         <p className="text-sm font-medium uppercase tracking-wider text-clay">Admin</p>
         <h1 className="mt-2 font-display text-4xl font-semibold text-ink dark:text-parchment">

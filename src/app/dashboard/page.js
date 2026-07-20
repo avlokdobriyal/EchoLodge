@@ -4,14 +4,9 @@ import { useSession } from "next-auth/react";
 import { Button, Loader, Modal, notify } from "@/components/ui/index.js";
 import ReviewForm from "@/components/ReviewForm";
 import RequireAuth from "@/components/RequireAuth";
+import { SentimentBadge, RatingStars } from "@/components/ReviewMeta";
 
 const API = "http://localhost:5000/api/reviews";
-
-const sentimentStyles = {
-  positive: "bg-forest/10 text-forest dark:bg-moss/20 dark:text-moss",
-  negative: "bg-clay/15 text-clay-dark dark:bg-clay/25 dark:text-clay",
-  neutral: "bg-sand text-ink-soft dark:bg-bark dark:text-parchment/70",
-};
 
 function formatDate(value) {
   if (!value) return null;
@@ -176,15 +171,12 @@ function DashboardContent() {
                   <h3 className="font-display text-xl font-semibold text-ink dark:text-parchment">
                     {review.guestName}
                   </h3>
-                  <span
-                    className={`shrink-0 inline-block px-3 py-1 text-xs rounded-full font-semibold ${
-                      sentimentStyles[review.sentiment] || sentimentStyles.neutral
-                    }`}
-                  >
-                    {review.sentiment.charAt(0).toUpperCase() + review.sentiment.slice(1)}
-                  </span>
+                  <SentimentBadge sentiment={review.sentiment} />
                 </div>
-                <p className="text-sm text-clay font-medium mb-4">{review.roomType}</p>
+                <div className="flex items-center gap-3 mb-4">
+                  <p className="text-sm text-clay font-medium">{review.roomType}</p>
+                  <RatingStars rating={review.rating} />
+                </div>
                 <p className="text-ink-soft dark:text-parchment/80 leading-relaxed grow">
                   &ldquo;{review.reviewText}&rdquo;
                 </p>

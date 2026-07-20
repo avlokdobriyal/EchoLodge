@@ -26,12 +26,20 @@ model Review {
   guestName   String
   roomType    String
   reviewText  String
-  sentiment   String
+  rating      Int? // 1-5 stars; nullable so pre-rating rows survive
   createdAt   DateTime @default(now())
   // nullable so existing rows survive the migration; new reviews are stamped
   // with the authenticated user.
   authorId    Int?
   author      User?    @relation(fields: [authorId], references: [id])
+
+  // --- AI-generated metadata (populated by Gemini on submission; all nullable
+  // so a review still saves when the AI call fails) ------------------------
+  sentiment      String? // POSITIVE | NEUTRAL | NEGATIVE
+  aiTags         String[] @default([]) // internal categorisation, admin-only
+  suggestedReply String? // AI draft reply, admin-only
+  adminReply     String? // the reply the admin actually published
+  adminReplied   Boolean  @default(false)
 }
 
 model Room {

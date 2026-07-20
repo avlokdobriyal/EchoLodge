@@ -4,14 +4,17 @@ import { Button, Input, Select, Textarea } from "@/components/ui/index.js";
 
 export const ROOM_TYPES = ["Standard", "Deluxe", "Suite"];
 
-export const SENTIMENTS = [
-    { value: "positive", label: "Positive" },
-    { value: "neutral", label: "Neutral" },
-    { value: "negative", label: "Negative" },
+const RATINGS = [
+    { value: "5", label: "★★★★★ — Excellent" },
+    { value: "4", label: "★★★★☆ — Very good" },
+    { value: "3", label: "★★★☆☆ — Average" },
+    { value: "2", label: "★★☆☆☆ — Poor" },
+    { value: "1", label: "★☆☆☆☆ — Terrible" },
 ];
 
 /**
- * Reusable form for creating and editing a review.
+ * Reusable form for creating and editing a review. Sentiment is no longer
+ * entered manually — it's derived by the AI pipeline on the backend.
  * @param {Object} props
  * @param {Object} [props.initialValues] - Existing review values (edit mode)
  * @param {function} props.onSubmit - async (data) => void; parent handles the API call
@@ -23,7 +26,7 @@ export default function ReviewForm({ initialValues, onSubmit, onCancel, submitLa
         guestName: initialValues?.guestName ?? "",
         roomType: initialValues?.roomType ?? ROOM_TYPES[0],
         reviewText: initialValues?.reviewText ?? "",
-        sentiment: initialValues?.sentiment ?? "positive",
+        rating: String(initialValues?.rating ?? 5),
     });
     const [errors, setErrors] = useState({});
     const [submitting, setSubmitting] = useState(false);
@@ -35,7 +38,8 @@ export default function ReviewForm({ initialValues, onSubmit, onCancel, submitLa
         if (!form.guestName.trim()) next.guestName = "Guest name is required";
         if (!form.roomType) next.roomType = "Room type is required";
         if (!form.reviewText.trim()) next.reviewText = "Review text is required";
-        if (!form.sentiment) next.sentiment = "Sentiment is required";
+        const rating = Number(form.rating);
+        if (!rating || rating < 1 || rating > 5) next.rating = "Rating is required";
         return next;
     };
 
@@ -51,7 +55,7 @@ export default function ReviewForm({ initialValues, onSubmit, onCancel, submitLa
                 guestName: form.guestName.trim(),
                 roomType: form.roomType,
                 reviewText: form.reviewText.trim(),
-                sentiment: form.sentiment,
+                rating: Number(form.rating),
             });
         } finally {
             setSubmitting(false);
@@ -83,12 +87,15 @@ export default function ReviewForm({ initialValues, onSubmit, onCancel, submitLa
                 rows={4}
             />
             <Select
-                label="Sentiment"
-                value={form.sentiment}
-                onChange={set("sentiment")}
-                error={errors.sentiment}
-                options={SENTIMENTS}
+                label="Rating"
+                value={form.rating}
+                onChange={set("rating")}
+                error={errors.rating}
+                options={RATINGS}
             />
+            <p className="text-xs text-ink-soft dark:text-parchment/50">
+                Sentiment is detected automatically by our AI when you submit.
+            </p>
             <div className="flex items-center gap-3 pt-1">
                 <Button type="submit" disabled={submitting}>
                     {submitting ? "Saving…" : submitLabel}
