@@ -7,7 +7,7 @@ export default function Hero() {
       <div className="pointer-events-none absolute -top-24 -right-24 h-72 w-72 rounded-full bg-moss/20 blur-3xl" />
       <div className="pointer-events-none absolute -bottom-32 -left-24 h-80 w-80 rounded-full bg-clay/15 blur-3xl" />
 
-      <div className="relative max-w-4xl mx-auto px-4 py-24 sm:py-28 text-center">
+      <div className="relative max-w-4xl mx-auto px-4 py-24 sm:py-28 text-center animate-fade-in-up">
         <span className="inline-flex items-center gap-2 rounded-full border border-forest/20 dark:border-moss/30 bg-forest/5 dark:bg-moss/10 px-4 py-1.5 text-sm font-medium text-forest dark:text-moss">
           <span className="h-1.5 w-1.5 rounded-full bg-clay" />
           Zero commission · Direct bookings
@@ -24,7 +24,7 @@ export default function Hero() {
         </p>
 
         <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
-          <Button href="/dashboard" size="lg">Find your lodge</Button>
+          <Button href="/rooms" size="lg">Find your lodge</Button>
           <Button href="/about" size="lg" variant="outline">Our story</Button>
         </div>
       </div>

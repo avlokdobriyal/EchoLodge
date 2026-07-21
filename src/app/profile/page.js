@@ -40,7 +40,7 @@ function ProfileContent() {
                 </dl>
 
                 <div className="mt-8 flex flex-wrap gap-3">
-                    <Button href="/dashboard" variant="outline">Go to dashboard</Button>
+                    <Button href="/reviews" variant="outline">Go to reviews</Button>
                     <Button variant="danger" onClick={() => signOut({ callbackUrl: "/login" })}>
                         Sign out
                     </Button>

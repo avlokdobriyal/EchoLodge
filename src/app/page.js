@@ -35,18 +35,22 @@ export default function Home() {
         </div>
 
         <div className="mt-10 grid grid-cols-1 md:grid-cols-2 gap-8">
-          <Card
-            title="Ganges View Room"
-            desc="Wake up to the serene sounds of the holy Ganges. A perfect blend of comfort and tranquility."
-            tag="Popular"
-            rating={4.8}
-          />
-          <Card
-            title="Forest Retreat"
-            desc="Immerse yourself in nature with this secluded, minimalist stay surrounded by lush greenery."
-            tag="Eco-Friendly"
-            rating={4.6}
-          />
+          <div className="card-lift animate-fade-in-up delay-100 rounded-3xl">
+            <Card
+              title="Ganges View Room"
+              desc="Wake up to the serene sounds of the holy Ganges. A perfect blend of comfort and tranquility."
+              tag="Popular"
+              rating={4.8}
+            />
+          </div>
+          <div className="card-lift animate-fade-in-up delay-200 rounded-3xl">
+            <Card
+              title="Forest Retreat"
+              desc="Immerse yourself in nature with this secluded, minimalist stay surrounded by lush greenery."
+              tag="Eco-Friendly"
+              rating={4.6}
+            />
+          </div>
         </div>
       </section>
 
@@ -54,8 +58,8 @@ export default function Home() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
             {features.map((f) => (
-              <div key={f.title}>
-                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-forest/10 dark:bg-moss/15 text-forest dark:text-moss">
+              <div key={f.title} className="group transition-transform duration-300 hover:-translate-y-1">
+                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-forest/10 dark:bg-moss/15 text-forest dark:text-moss transition-colors duration-300 group-hover:bg-forest group-hover:text-cream dark:group-hover:bg-moss dark:group-hover:text-bark">
                   <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d={f.icon} />
                   </svg>

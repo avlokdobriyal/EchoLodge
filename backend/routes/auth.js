@@ -8,7 +8,9 @@ const prisma = require('../lib/prisma');
 const router = express.Router();
 
 const SALT_ROUNDS = 12;
-const JWT_EXPIRES_IN = '7d';
+// Must cover the NextAuth session lifetime (30d default) — a shorter backend
+// token dies mid-session and every authorized call starts silently 401ing.
+const JWT_EXPIRES_IN = '30d';
 
 // Limit auth attempts: 5 per 15 minutes per IP. Applied to this router only.
 const authLimiter = rateLimit({

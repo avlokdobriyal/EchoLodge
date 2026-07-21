@@ -22,6 +22,13 @@ const replySchema = z.object({
   reply: z.string().trim().min(1, 'Reply text is required').max(4000),
 });
 
+// Only the review's author or an admin may modify it. Legacy rows with no
+// authorId are admin-only.
+function canModify(review, user) {
+  if (user.role === 'ADMIN') return true;
+  return review.authorId != null && review.authorId === Number(user.id);
+}
+
 // The shape non-admin callers see: internal AI fields (aiTags, suggestedReply)
 // are stripped; the published adminReply, repliedAt and sentiment remain visible.
 function toPublic(review) {
@@ -136,6 +143,9 @@ router.put('/:id', requireAuth, async (req, res, next) => {
     if (!existing) {
       return res.status(404).json({ error: 'Review not found' });
     }
+    if (!canModify(existing, req.user)) {
+      return res.status(403).json({ error: 'You can only edit your own reviews' });
+    }
 
     const updated = await prisma.review.update({
       where: { id: reviewId },
@@ -156,6 +166,9 @@ router.delete('/:id', requireAuth, async (req, res, next) => {
       : await prisma.review.findUnique({ where: { id: reviewId } });
     if (!existing) {
       return res.status(404).json({ error: 'Review not found' });
+    }
+    if (!canModify(existing, req.user)) {
+      return res.status(403).json({ error: 'You can only delete your own reviews' });
     }
     await prisma.review.delete({ where: { id: reviewId } });
     res.status(204).send();

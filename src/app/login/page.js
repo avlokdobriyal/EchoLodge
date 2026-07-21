@@ -36,7 +36,7 @@ export default function LoginPage() {
             return;
         }
         notify("Welcome back!", "success");
-        router.push("/dashboard");
+        router.push("/reviews");
     };
 
     return (
@@ -82,7 +82,7 @@ export default function LoginPage() {
 
                 <button
                     type="button"
-                    onClick={() => signIn("google", { callbackUrl: "/dashboard" })}
+                    onClick={() => signIn("google", { callbackUrl: "/reviews" })}
                     className="w-full inline-flex justify-center items-center gap-3 px-5 py-3 rounded-full border border-sand dark:border-bark-soft bg-surface dark:bg-bark text-ink dark:text-parchment font-medium hover:bg-sand/50 dark:hover:bg-bark-soft transition-colors focus:outline-none focus:ring-2 focus:ring-forest/40"
                 >
                     <svg className="w-5 h-5" viewBox="0 0 24 24" aria-hidden="true">

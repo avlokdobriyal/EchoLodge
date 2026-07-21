@@ -21,6 +21,14 @@ function authHeaders(token) {
   return { "Content-Type": "application/json", Authorization: `Bearer ${token}` };
 }
 
+// A 401 means the backend token died while the NextAuth session survived —
+// surface that as an actionable message instead of a generic failure.
+function throwForStatus(res, fallback) {
+  if (res.status === 401) throw new Error("Your session has expired — please log out and back in");
+  if (res.status === 403) throw new Error("You can only modify your own reviews");
+  throw new Error(fallback);
+}
+
 async function apiList() {
   const res = await fetch(API);
   if (!res.ok) throw new Error("Failed to load reviews");
@@ -32,7 +40,7 @@ async function apiCreate(data, token) {
     headers: authHeaders(token),
     body: JSON.stringify(data),
   });
-  if (!res.ok) throw new Error("Failed to create review");
+  if (!res.ok) throwForStatus(res, "Failed to create review");
   return res.json();
 }
 async function apiUpdate(id, data, token) {
@@ -41,7 +49,7 @@ async function apiUpdate(id, data, token) {
     headers: authHeaders(token),
     body: JSON.stringify(data),
   });
-  if (!res.ok) throw new Error("Failed to update review");
+  if (!res.ok) throwForStatus(res, "Failed to update review");
   return res.json();
 }
 async function apiDelete(id, token) {
@@ -49,17 +57,27 @@ async function apiDelete(id, token) {
     method: "DELETE",
     headers: { Authorization: `Bearer ${token}` },
   });
-  if (!res.ok) throw new Error("Failed to delete review");
+  if (!res.ok) throwForStatus(res, "Failed to delete review");
 }
 
-function DashboardContent() {
+function ReviewsContent() {
   const { data: session } = useSession();
   const token = session?.backendToken;
+  const isAdmin = session?.user?.role === "ADMIN";
   const [reviews, setReviews] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [deletingId, setDeletingId] = useState(null);
+
+  // Edit/Delete are restricted to the review's author or an admin. Legacy
+  // reviews without an authorId are admin-only. (The backend enforces the
+  // same rule — this only hides buttons that would 403 anyway.)
+  const canModify = (review) =>
+    isAdmin ||
+    (review.authorId != null &&
+      session?.user?.id != null &&
+      String(review.authorId) === String(session.user.id));
 
   useEffect(() => {
     let active = true;
@@ -117,14 +135,14 @@ function DashboardContent() {
 
   return (
     <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-      <header className="mb-10 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
+      <header className="mb-10 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 animate-fade-in-up">
         <div>
           <p className="text-sm font-medium uppercase tracking-wider text-clay">Guest voices</p>
           <h1 className="mt-2 font-display text-4xl md:text-5xl font-semibold text-ink dark:text-parchment">
-            Dashboard Reviews
+            Reviews
           </h1>
           <p className="mt-3 text-ink-soft dark:text-parchment/70">
-            Manage what guests are saying about their stays with our hosts.
+            What guests are saying about their stays with our hosts.
           </p>
         </div>
         <Button onClick={() => setIsCreateOpen(true)} className="shrink-0">
@@ -146,7 +164,7 @@ function DashboardContent() {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {reviews.map((review) =>
+          {reviews.map((review, index) =>
             editingId === review.id ? (
               <div
                 key={review.id}
@@ -165,7 +183,7 @@ function DashboardContent() {
             ) : (
               <div
                 key={review.id}
-                className="flex flex-col p-6 rounded-3xl bg-surface dark:bg-bark-soft border border-sand dark:border-bark-soft shadow-sm hover:shadow-lg transition-shadow"
+                className={`card-lift animate-fade-in-up ${index < 3 ? `delay-${(index + 1) * 100}` : ""} flex flex-col p-6 rounded-3xl bg-surface dark:bg-bark-soft border border-sand dark:border-bark-soft shadow-sm`}
               >
                 <div className="flex items-start justify-between gap-3 mb-1">
                   <h3 className="font-display text-xl font-semibold text-ink dark:text-parchment">
@@ -208,23 +226,25 @@ function DashboardContent() {
                   ) : (
                     <span />
                   )}
-                  <div className="flex items-center gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setEditingId(review.id)}
-                    >
-                      Edit
-                    </Button>
-                    <Button
-                      variant="danger"
-                      size="sm"
-                      onClick={() => handleDelete(review.id)}
-                      disabled={deletingId === review.id}
-                    >
-                      {deletingId === review.id ? "Deleting…" : "Delete"}
-                    </Button>
-                  </div>
+                  {canModify(review) && (
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setEditingId(review.id)}
+                      >
+                        Edit
+                      </Button>
+                      <Button
+                        variant="danger"
+                        size="sm"
+                        onClick={() => handleDelete(review.id)}
+                        disabled={deletingId === review.id}
+                      >
+                        {deletingId === review.id ? "Deleting…" : "Delete"}
+                      </Button>
+                    </div>
+                  )}
                 </div>
               </div>
             )
@@ -243,10 +263,10 @@ function DashboardContent() {
   );
 }
 
-export default function DashboardPage() {
+export default function ReviewsPage() {
   return (
     <RequireAuth>
-      <DashboardContent />
+      <ReviewsContent />
     </RequireAuth>
   );
 }

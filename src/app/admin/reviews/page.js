@@ -149,11 +149,23 @@ function AdminReviewsContent() {
   const [error, setError] = useState(null);
 
   const load = useCallback(async () => {
-    if (!token) return;
+    // A session without a backend token can't call authorized routes — bail
+    // with guidance instead of spinning forever.
+    if (!token) {
+      setError("Your session is missing its access token — please log out and back in");
+      setLoading(false);
+      return;
+    }
     try {
       const res = await fetch(`${API}/admin/all`, {
         headers: { Authorization: `Bearer ${token}` },
       });
+      // 401 = the backend JWT expired even though the NextAuth session is
+      // still alive; a fresh login mints a new one.
+      if (res.status === 401) {
+        throw new Error("Your session has expired — please log out and back in");
+      }
+      if (res.status === 403) throw new Error("Admin access is required to view this page");
       if (!res.ok) throw new Error("Failed to load reviews");
       setReviews(await res.json());
       setError(null);
@@ -176,7 +188,7 @@ function AdminReviewsContent() {
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
       <AdminTabs />
-      <div className="mb-8">
+      <div className="mb-8 animate-fade-in-up">
         <p className="text-sm font-medium uppercase tracking-wider text-clay">Admin</p>
         <h1 className="mt-2 font-display text-4xl font-semibold text-ink dark:text-parchment">
           Review Management
@@ -194,7 +206,7 @@ function AdminReviewsContent() {
           <Loader className="w-8 h-8 text-forest dark:text-moss" />
         </div>
       ) : error ? (
-        <p className="text-clay">{error} — is the backend running on port 5000?</p>
+        <p className="text-clay">{error}</p>
       ) : reviews.length === 0 ? (
         <p className="text-ink-soft dark:text-parchment/70">No reviews yet.</p>
       ) : (

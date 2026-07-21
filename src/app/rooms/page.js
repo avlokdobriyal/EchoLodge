@@ -1,15 +1,38 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { Button, Input, Modal, Loader, notify } from "@/components/ui/index.js";
 
 const API = "http://localhost:5000/api";
 
-const categoryAccent = {
-  "Ganga View Balcony": "bg-forest/10 text-forest dark:bg-moss/20 dark:text-moss",
-  "Standard Balcony": "bg-sand text-ink-soft dark:bg-bark dark:text-parchment/70",
-  "Super Deluxe Ganga View Suite": "bg-clay/15 text-clay-dark dark:bg-clay/25 dark:text-clay",
+// Presentation metadata per DB room category. Inventory itself is derived from
+// the live rooms list, never hardcoded.
+const CATEGORY_META = {
+  "Ganga View Balcony": {
+    label: "Ganga Balcony",
+    tagline: "Private balconies opening straight onto the river",
+    highlights: ["Ganga-facing balcony", "Sunrise aarti views", "Complimentary terrace access"],
+    accent: "from-forest/90 to-forest-light/80",
+    chip: "bg-forest/10 text-forest dark:bg-moss/20 dark:text-moss",
+    order: 1,
+  },
+  "Standard Balcony": {
+    label: "Standard Balcony",
+    tagline: "Calm, comfortable rooms in the heart of the lodge",
+    highlights: ["Garden-side balcony", "Warm minimalist interiors", "Complimentary terrace access"],
+    accent: "from-clay/80 to-clay-dark/80",
+    chip: "bg-sand text-ink-soft dark:bg-bark dark:text-parchment/70",
+    order: 2,
+  },
+  "Super Deluxe Ganga View Suite": {
+    label: "Super Deluxe Ganga View Suite",
+    tagline: "Our finest suites — panoramic river views and space to breathe",
+    highlights: ["Panoramic Ganga suite", "Separate lounge area", "Complimentary terrace access"],
+    accent: "from-bark/90 to-bark-soft/90",
+    chip: "bg-clay/15 text-clay-dark dark:bg-clay/25 dark:text-clay",
+    order: 3,
+  },
 };
 
 function formatINR(value) {
@@ -32,53 +55,119 @@ function nightsBetween(checkIn, checkOut) {
   return Math.ceil(ms / (1000 * 60 * 60 * 24));
 }
 
-function RoomCard({ room, onBook }) {
-  const accent = categoryAccent[room.category] || categoryAccent["Standard Balcony"];
+// Collapse the flat rooms list into one entry per category, keeping the live
+// inventory count so the booking UI can cap the quantity selector.
+function groupByCategory(rooms) {
+  const groups = new Map();
+  for (const room of rooms) {
+    if (!groups.has(room.category)) {
+      groups.set(room.category, {
+        category: room.category,
+        pricePerNight: room.pricePerNight,
+        description: room.description,
+        inventory: 0,
+      });
+    }
+    groups.get(room.category).inventory += 1;
+  }
+  return [...groups.values()].sort(
+    (a, b) => (CATEGORY_META[a.category]?.order ?? 99) - (CATEGORY_META[b.category]?.order ?? 99)
+  );
+}
+
+// Quantity stepper strictly clamped to [1, max] — max is the category's
+// live inventory (5 / 5 / 2), so overbooking can't even be requested.
+function QuantityStepper({ value, max, onChange }) {
+  const decrement = () => onChange(Math.max(1, value - 1));
+  const increment = () => onChange(Math.min(max, value + 1));
+  const stepBtn =
+    "flex h-9 w-9 items-center justify-center rounded-full border border-sand dark:border-bark-soft text-lg font-medium text-ink dark:text-parchment transition-all hover:border-forest hover:text-forest dark:hover:border-moss dark:hover:text-moss disabled:opacity-30 disabled:hover:border-sand dark:disabled:hover:border-bark-soft disabled:hover:text-ink dark:disabled:hover:text-parchment";
+
   return (
-    <div className="flex flex-col rounded-3xl bg-surface dark:bg-bark-soft border border-sand dark:border-bark-soft shadow-sm overflow-hidden">
-      <div className="p-6 flex flex-col flex-grow">
-        <span className={`self-start px-3 py-1 rounded-full text-xs font-medium ${accent}`}>
-          {room.category}
+    <div className="flex items-center justify-between">
+      <div>
+        <p className="text-sm font-medium text-ink dark:text-parchment">Rooms</p>
+        <p className="text-xs text-ink-soft dark:text-parchment/50">{max} available in this category</p>
+      </div>
+      <div className="flex items-center gap-3">
+        <button type="button" onClick={decrement} disabled={value <= 1} aria-label="Fewer rooms" className={stepBtn}>
+          −
+        </button>
+        <span className="w-6 text-center font-display text-lg font-semibold text-ink dark:text-parchment">
+          {value}
         </span>
-        <h3 className="mt-4 font-display text-xl font-semibold text-ink dark:text-parchment">
-          {room.name}
-        </h3>
-        <p className="mt-2 text-sm text-ink-soft dark:text-parchment/70 flex-grow">
-          {room.description}
-        </p>
-        <div className="mt-5 flex items-end justify-between">
-          <div>
-            <p className="font-display text-2xl font-semibold text-ink dark:text-parchment">
-              {formatINR(room.pricePerNight)}
-            </p>
-            <p className="text-xs text-ink-soft dark:text-parchment/50">per night</p>
-          </div>
-          <Button size="sm" onClick={() => onBook(room)}>
-            Book Now
-          </Button>
-        </div>
+        <button type="button" onClick={increment} disabled={value >= max} aria-label="More rooms" className={stepBtn}>
+          +
+        </button>
       </div>
     </div>
   );
 }
 
-function BookingModal({ room, isOpen, onClose, onBooked, session, router }) {
+function CategoryTile({ group, index, onOpen }) {
+  const meta = CATEGORY_META[group.category] ?? {
+    label: group.category,
+    tagline: "",
+    highlights: [],
+    accent: "from-forest/90 to-forest-light/80",
+    chip: "bg-sand text-ink-soft",
+  };
+
+  return (
+    <button
+      type="button"
+      onClick={() => onOpen(group)}
+      className={`card-lift animate-fade-in-up delay-${(index + 1) * 100} group flex flex-col text-left rounded-3xl bg-surface dark:bg-bark-soft border border-sand dark:border-bark-soft shadow-sm overflow-hidden focus:outline-none focus:ring-2 focus:ring-forest/40`}
+    >
+      {/* Banner — gradient stand-in for photography, shimmers on hover */}
+      <div className={`relative h-36 bg-gradient-to-br ${meta.accent}`}>
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_20%,rgba(255,255,255,0.25),transparent_55%)] opacity-70 transition-opacity duration-500 group-hover:opacity-100" />
+        <span className="absolute bottom-3 left-4 rounded-full bg-cream/90 dark:bg-bark/90 px-3 py-1 text-xs font-semibold text-ink dark:text-parchment shadow-sm">
+          {group.inventory} room{group.inventory > 1 ? "s" : ""} · {formatINR(group.pricePerNight)}/night
+        </span>
+      </div>
+
+      <div className="flex flex-col flex-grow p-6">
+        <span className={`self-start px-3 py-1 rounded-full text-xs font-medium ${meta.chip}`}>
+          {group.category}
+        </span>
+        <h3 className="mt-4 font-display text-2xl font-semibold text-ink dark:text-parchment">
+          {meta.label}
+        </h3>
+        <p className="mt-2 text-sm text-ink-soft dark:text-parchment/70 flex-grow leading-relaxed">
+          {meta.tagline}
+        </p>
+        <span className="mt-5 inline-flex items-center gap-1.5 text-sm font-medium text-forest dark:text-moss transition-transform duration-300 group-hover:translate-x-1">
+          View &amp; book
+          <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5-5 5M6 12h12" />
+          </svg>
+        </span>
+      </div>
+    </button>
+  );
+}
+
+function CategoryBookingModal({ group, isOpen, onClose, session, router }) {
   const [checkIn, setCheckIn] = useState("");
   const [checkOut, setCheckOut] = useState("");
+  const [quantity, setQuantity] = useState(1);
   const [errors, setErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
 
-  // Reset the fields whenever a different room's modal opens.
+  // Reset the fields whenever a different category's modal opens.
   useEffect(() => {
     setCheckIn("");
     setCheckOut("");
+    setQuantity(1);
     setErrors({});
-  }, [room?.id]);
+  }, [group?.category]);
 
-  if (!room) return null;
+  if (!group) return null;
 
+  const meta = CATEGORY_META[group.category] ?? { label: group.category, highlights: [] };
   const nights = nightsBetween(checkIn, checkOut);
-  const total = nights * room.pricePerNight;
+  const total = nights * group.pricePerNight * quantity;
 
   const validate = () => {
     const next = {};
@@ -106,21 +195,28 @@ function BookingModal({ room, isOpen, onClose, onBooked, session, router }) {
 
     setSubmitting(true);
     try {
-      const res = await fetch(`${API}/bookings`, {
+      const res = await fetch(`${API}/bookings/category`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${session.backendToken}`,
         },
-        body: JSON.stringify({ roomId: room.id, checkIn, checkOut }),
+        body: JSON.stringify({ category: group.category, quantity, checkIn, checkOut }),
       });
       const data = await res.json().catch(() => ({}));
+      if (res.status === 401) {
+        notify("Your session has expired — please sign in again", "error");
+        router.push("/login");
+        return;
+      }
       if (!res.ok) {
         notify(data.error || "Could not complete booking", "error");
         return;
       }
-      notify(`Booked ${room.name} for ${nights} night${nights > 1 ? "s" : ""}!`, "success");
-      onBooked?.(data);
+      notify(
+        `Booked ${quantity} × ${meta.label} for ${nights} night${nights > 1 ? "s" : ""}!`,
+        "success"
+      );
       onClose();
     } catch {
       notify("Network error — is the backend running?", "error");
@@ -130,11 +226,30 @@ function BookingModal({ room, isOpen, onClose, onBooked, session, router }) {
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title={`Book — ${room.name}`}>
+    <Modal isOpen={isOpen} onClose={onClose} title={meta.label}>
       <form onSubmit={handleSubmit} noValidate className="space-y-5">
-        <p className="text-sm text-ink-soft dark:text-parchment/70">
-          {formatINR(room.pricePerNight)} per night · {room.category}
+        <p className="text-sm text-ink-soft dark:text-parchment/70 leading-relaxed">
+          {group.description}
         </p>
+
+        {meta.highlights.length > 0 && (
+          <ul className="flex flex-wrap gap-2">
+            {meta.highlights.map((h) => (
+              <li
+                key={h}
+                className="rounded-full bg-canvas dark:bg-bark border border-sand dark:border-bark-soft px-3 py-1 text-xs text-ink-soft dark:text-parchment/70"
+              >
+                {h}
+              </li>
+            ))}
+          </ul>
+        )}
+
+        <p className="text-sm text-ink-soft dark:text-parchment/70">
+          {formatINR(group.pricePerNight)} per night · {group.inventory} room
+          {group.inventory > 1 ? "s" : ""} in this category
+        </p>
+
         <Input
           label="Check-in"
           type="date"
@@ -152,10 +267,13 @@ function BookingModal({ room, isOpen, onClose, onBooked, session, router }) {
           error={errors.checkOut}
         />
 
+        <QuantityStepper value={quantity} max={group.inventory} onChange={setQuantity} />
+
         {nights > 0 && (
-          <div className="rounded-2xl bg-canvas dark:bg-bark p-4 flex items-center justify-between">
+          <div className="rounded-2xl bg-canvas dark:bg-bark p-4 flex items-center justify-between animate-fade-in">
             <span className="text-sm text-ink-soft dark:text-parchment/70">
-              {nights} night{nights > 1 ? "s" : ""} × {formatINR(room.pricePerNight)}
+              {quantity} room{quantity > 1 ? "s" : ""} × {nights} night{nights > 1 ? "s" : ""} ×{" "}
+              {formatINR(group.pricePerNight)}
             </span>
             <span className="font-display text-lg font-semibold text-ink dark:text-parchment">
               {formatINR(total)}
@@ -177,7 +295,7 @@ export default function RoomsPage() {
   const [rooms, setRooms] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [activeRoom, setActiveRoom] = useState(null);
+  const [activeGroup, setActiveGroup] = useState(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -198,16 +316,18 @@ export default function RoomsPage() {
     };
   }, []);
 
+  const groups = useMemo(() => groupByCategory(rooms), [rooms]);
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
-      <div className="text-center mb-12">
+      <div className="text-center mb-14 animate-fade-in-up">
         <p className="text-sm font-medium uppercase tracking-wider text-clay">Stay with us</p>
         <h1 className="mt-2 font-display text-4xl sm:text-5xl font-semibold text-ink dark:text-parchment">
-          Our Rooms
+          Rooms &amp; Suites
         </h1>
         <p className="mt-3 max-w-2xl mx-auto text-ink-soft dark:text-parchment/70">
-          Riverside rooms and suites in the heart of the valley — every stay includes
-          complimentary terrace access.
+          Three ways to stay by the river — every one of them with complimentary
+          terrace access and the Ganga a short walk away.
         </p>
       </div>
 
@@ -222,17 +342,17 @@ export default function RoomsPage() {
       )}
 
       {!loading && !error && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {rooms.map((room) => (
-            <RoomCard key={room.id} room={room} onBook={setActiveRoom} />
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          {groups.map((group, index) => (
+            <CategoryTile key={group.category} group={group} index={index} onOpen={setActiveGroup} />
           ))}
         </div>
       )}
 
-      <BookingModal
-        room={activeRoom}
-        isOpen={activeRoom !== null}
-        onClose={() => setActiveRoom(null)}
+      <CategoryBookingModal
+        group={activeGroup}
+        isOpen={activeGroup !== null}
+        onClose={() => setActiveGroup(null)}
         session={session}
         router={router}
       />

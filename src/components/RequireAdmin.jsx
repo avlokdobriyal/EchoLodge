@@ -5,7 +5,7 @@ import { useEffect } from "react";
 import { Loader } from "@/components/ui/index.js";
 
 // Route guard for admin-only pages. Unauthenticated users are sent to /login;
-// authenticated non-admins are bounced to /dashboard. Renders children only for
+// authenticated non-admins are bounced to /reviews. Renders children only for
 // users whose session role is exactly "ADMIN".
 export default function RequireAdmin({ children }) {
   const { data: session, status } = useSession();
@@ -16,7 +16,7 @@ export default function RequireAdmin({ children }) {
     if (status === "unauthenticated") {
       router.replace("/login");
     } else if (status === "authenticated" && !isAdmin) {
-      router.replace("/dashboard");
+      router.replace("/reviews");
     }
   }, [status, isAdmin, router]);
 

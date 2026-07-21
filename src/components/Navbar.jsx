@@ -7,7 +7,7 @@ const baseLinks = [
   { href: "/", label: "Home" },
   { href: "/about", label: "About" },
   { href: "/rooms", label: "Rooms" },
-  { href: "/dashboard", label: "Dashboard" },
+  { href: "/reviews", label: "Reviews" },
 ];
 
 export default function Navbar() {

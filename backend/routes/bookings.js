@@ -72,6 +72,88 @@ router.post('/', requireAuth, async (req, res, next) => {
   }
 });
 
+// --- POST /api/bookings/category — book N rooms of a category --------------
+// The rooms page sells by category (e.g. 3 × "Standard Balcony"), so this
+// finds `quantity` rooms of the category free for the range and books them
+// atomically — either every room is reserved or none are.
+const categoryBookingSchema = z.object({
+  category: z.string().trim().min(1, 'category is required'),
+  quantity: z.coerce.number().int().min(1).max(10),
+  checkIn: z.coerce.date({ invalid_type_error: 'checkIn must be a valid date' }),
+  checkOut: z.coerce.date({ invalid_type_error: 'checkOut must be a valid date' }),
+});
+
+router.post('/category', requireAuth, async (req, res, next) => {
+  const parsed = categoryBookingSchema.safeParse(req.body);
+  if (!parsed.success) {
+    return res.status(400).json({ error: 'Invalid input', details: parsed.error.flatten().fieldErrors });
+  }
+  const { category, quantity, checkIn, checkOut } = parsed.data;
+
+  if (checkOut <= checkIn) {
+    return res.status(400).json({ error: 'checkOut must be after checkIn' });
+  }
+
+  try {
+    const rooms = await prisma.room.findMany({
+      where: { category },
+      orderBy: { id: 'asc' },
+    });
+    if (rooms.length === 0) {
+      return res.status(404).json({ error: 'No rooms found in this category' });
+    }
+    if (quantity > rooms.length) {
+      return res.status(400).json({
+        error: `Only ${rooms.length} room(s) exist in this category`,
+        inventory: rooms.length,
+      });
+    }
+
+    // Rooms with an active booking overlapping the requested range are taken.
+    const conflicts = await prisma.booking.findMany({
+      where: {
+        roomId: { in: rooms.map((r) => r.id) },
+        status: { not: 'CANCELLED' },
+        checkInDate: { lt: checkOut },
+        checkOutDate: { gt: checkIn },
+      },
+      select: { roomId: true },
+    });
+    const taken = new Set(conflicts.map((c) => c.roomId));
+    const free = rooms.filter((r) => !taken.has(r.id));
+
+    if (free.length < quantity) {
+      return res.status(409).json({
+        error: `Only ${free.length} room(s) of this category are available for the selected dates`,
+        available: free.length,
+      });
+    }
+
+    const nights = nightsBetween(checkIn, checkOut);
+    const picked = free.slice(0, quantity);
+
+    const bookings = await prisma.$transaction(
+      picked.map((room) =>
+        prisma.booking.create({
+          data: {
+            userId: Number(req.user.id),
+            roomId: room.id,
+            checkInDate: checkIn,
+            checkOutDate: checkOut,
+            totalPrice: nights * room.pricePerNight,
+          },
+          include: { room: { select: { name: true, category: true } } },
+        })
+      )
+    );
+
+    const totalPrice = bookings.reduce((sum, b) => sum + b.totalPrice, 0);
+    res.status(201).json({ bookings, nights, quantity, totalPrice });
+  } catch (err) {
+    next(err);
+  }
+});
+
 // --- GET /api/bookings — the authenticated user's own bookings -------------
 router.get('/', requireAuth, async (req, res, next) => {
   try {
