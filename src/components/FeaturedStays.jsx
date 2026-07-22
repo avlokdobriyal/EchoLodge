@@ -10,13 +10,13 @@ const CATEGORY_TAGS = {
   "Super Deluxe Ganga View Suite": "Signature",
 };
 
-function formatINR(value) {
-  return new Intl.NumberFormat("en-IN", {
-    style: "currency",
-    currency: "INR",
-    maximumFractionDigits: 0,
-  }).format(value);
-}
+// Hoisted: built once per module rather than once per call.
+const INR = new Intl.NumberFormat("en-IN", {
+  style: "currency",
+  currency: "INR",
+  maximumFractionDigits: 0,
+});
+const formatINR = (value) => INR.format(value);
 
 // One card per room category, straight from the live inventory.
 function groupByCategory(rooms) {

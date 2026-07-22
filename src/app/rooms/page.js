@@ -36,13 +36,14 @@ const CATEGORY_META = {
   },
 };
 
-function formatINR(value) {
-  return new Intl.NumberFormat("en-IN", {
-    style: "currency",
-    currency: "INR",
-    maximumFractionDigits: 0,
-  }).format(value);
-}
+// Hoisted: Intl.NumberFormat construction is expensive relative to .format(),
+// so build it once per module rather than once per call.
+const INR = new Intl.NumberFormat("en-IN", {
+  style: "currency",
+  currency: "INR",
+  maximumFractionDigits: 0,
+});
+const formatINR = (value) => INR.format(value);
 
 // ISO yyyy-mm-dd for today, used as the min for the date inputs.
 function todayISO() {

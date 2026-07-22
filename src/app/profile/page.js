@@ -7,13 +7,13 @@ import EmptyState from "@/components/EmptyState";
 
 const API = "http://localhost:5000/api/bookings";
 
-function formatINR(value) {
-    return new Intl.NumberFormat("en-IN", {
-        style: "currency",
-        currency: "INR",
-        maximumFractionDigits: 0,
-    }).format(value);
-}
+// Hoisted: built once per module rather than once per call.
+const INR = new Intl.NumberFormat("en-IN", {
+    style: "currency",
+    currency: "INR",
+    maximumFractionDigits: 0,
+});
+const formatINR = (value) => INR.format(value);
 
 function formatDate(value) {
     const d = new Date(value);

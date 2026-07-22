@@ -85,7 +85,7 @@ function ReviewCard({ review, token, onPublished }) {
           <h3 className="font-display text-lg font-semibold text-ink dark:text-parchment">
             {review.guestName}
           </h3>
-          <div className="mt-0.5 flex items-center gap-3">
+          <div className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-1">
             <span className="text-sm text-clay font-medium">{review.roomType}</span>
             <RatingStars rating={review.rating} />
             {formatDate(review.createdAt) && (

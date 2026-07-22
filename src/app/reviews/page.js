@@ -238,7 +238,7 @@ function ReviewsContent() {
                   </h3>
                   <SentimentBadge sentiment={review.sentiment} />
                 </div>
-                <div className="flex items-center gap-3 mb-4">
+                <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mb-4">
                   <p className="text-sm text-clay font-medium">{review.roomType}</p>
                   <RatingStars rating={review.rating} />
                 </div>

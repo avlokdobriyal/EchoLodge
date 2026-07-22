@@ -14,13 +14,13 @@ const CATEGORIES = [
   "Super Deluxe Ganga View Suite",
 ];
 
-function formatINR(value) {
-  return new Intl.NumberFormat("en-IN", {
-    style: "currency",
-    currency: "INR",
-    maximumFractionDigits: 0,
-  }).format(value);
-}
+// Hoisted: built once per module rather than once per call.
+const INR = new Intl.NumberFormat("en-IN", {
+  style: "currency",
+  currency: "INR",
+  maximumFractionDigits: 0,
+});
+const formatINR = (value) => INR.format(value);
 
 const EMPTY_FORM = { name: "", category: CATEGORIES[0], description: "", pricePerNight: "" };
 
