@@ -5,6 +5,7 @@ import { Button, Loader, Modal, ConfirmDialog, notify } from "@/components/ui/in
 import ReviewForm from "@/components/ReviewForm";
 import RequireAuth from "@/components/RequireAuth";
 import { SentimentBadge, RatingStars } from "@/components/ReviewMeta";
+import EmptyState from "@/components/EmptyState";
 
 const API = "http://localhost:5000/api/reviews";
 
@@ -191,16 +192,23 @@ function ReviewsContent() {
           <span className="ml-3 text-ink-soft dark:text-parchment/70">Loading reviews...</span>
         </div>
       ) : reviews.length === 0 ? (
-        <div className="rounded-3xl border border-dashed border-sand dark:border-bark-soft py-16 text-center animate-fade-in">
-          <p className="text-ink-soft dark:text-parchment/60">
-            {scope === "mine"
-              ? "You haven't written a review yet — share your stay!"
-              : "No reviews yet — write the first one."}
-          </p>
-          <Button variant="outline" onClick={() => setIsCreateOpen(true)} className="mt-4">
-            {scope === "mine" ? "Write my first review" : "Add the first one"}
-          </Button>
-        </div>
+        <EmptyState
+          title={
+            scope === "mine"
+              ? "You haven't written a review yet"
+              : "No reviews yet — write the first one"
+          }
+          hint={
+            scope === "mine"
+              ? "Share how your stay by the river felt."
+              : "Guest voices make EchoLodge what it is."
+          }
+          action={
+            <Button variant="outline" onClick={() => setIsCreateOpen(true)}>
+              {scope === "mine" ? "Write my first review" : "Add the first one"}
+            </Button>
+          }
+        />
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {reviews.map((review, index) =>

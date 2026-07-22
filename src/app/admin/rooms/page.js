@@ -4,6 +4,7 @@ import { useSession } from "next-auth/react";
 import { Button, Input, Loader, ConfirmDialog, notify } from "@/components/ui/index.js";
 import RequireAdmin from "@/components/RequireAdmin";
 import AdminTabs from "@/components/AdminTabs";
+import EmptyState from "@/components/EmptyState";
 
 const API = "http://localhost:5000/api/rooms";
 
@@ -201,7 +202,10 @@ function AdminRoomsContent() {
               <Loader className="w-8 h-8 text-forest dark:text-moss" />
             </div>
           ) : rooms.length === 0 ? (
-            <p className="text-ink-soft dark:text-parchment/70">No rooms yet. Add one to get started.</p>
+            <EmptyState
+              title="No rooms in the catalogue yet"
+              hint="Add your first room with the form to get bookings flowing."
+            />
           ) : (
             <ul className="space-y-3">
               {rooms.map((room) => (

@@ -3,6 +3,7 @@ import { useState, useEffect, useMemo } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { Button, Input, Modal, Loader, notify } from "@/components/ui/index.js";
+import EmptyState from "@/components/EmptyState";
 
 const API = "http://localhost:5000/api";
 
@@ -341,7 +342,14 @@ export default function RoomsPage() {
         <p className="text-center text-clay">{error} — is the backend running on port 5000?</p>
       )}
 
-      {!loading && !error && (
+      {!loading && !error && groups.length === 0 && (
+        <EmptyState
+          title="No rooms available right now"
+          hint="Our hosts are preparing the lodge — check back soon."
+        />
+      )}
+
+      {!loading && !error && groups.length > 0 && (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {groups.map((group, index) => (
             <CategoryTile key={group.category} group={group} index={index} onOpen={setActiveGroup} />

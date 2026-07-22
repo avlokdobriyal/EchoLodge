@@ -5,6 +5,7 @@ import { Button, Loader, notify } from "@/components/ui/index.js";
 import RequireAdmin from "@/components/RequireAdmin";
 import AdminTabs from "@/components/AdminTabs";
 import { SentimentBadge, RatingStars } from "@/components/ReviewMeta";
+import EmptyState from "@/components/EmptyState";
 
 const API = "http://localhost:5000/api/reviews";
 
@@ -246,7 +247,10 @@ function AdminReviewsContent() {
       ) : error ? (
         <p className="text-clay">{error}</p>
       ) : reviews.length === 0 ? (
-        <p className="text-ink-soft dark:text-parchment/70">No reviews yet.</p>
+        <EmptyState
+          title="No guest reviews to manage yet"
+          hint="New reviews land here with AI analysis and a drafted reply."
+        />
       ) : (
         <div className="space-y-5">
           {reviews.map((review) => (

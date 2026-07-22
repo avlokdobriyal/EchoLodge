@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useSession, signOut } from "next-auth/react";
 import { Button, Loader, ConfirmDialog, notify } from "@/components/ui/index.js";
 import RequireAuth from "@/components/RequireAuth";
+import EmptyState from "@/components/EmptyState";
 
 const API = "http://localhost:5000/api/bookings";
 
@@ -103,14 +104,16 @@ function MyBookings({ token }) {
             ) : error ? (
                 <p className="mt-4 text-clay">{error}</p>
             ) : bookings.length === 0 ? (
-                <div className="mt-4 rounded-2xl border border-dashed border-sand dark:border-bark py-10 text-center">
-                    <p className="text-ink-soft dark:text-parchment/60">
-                        No stays booked yet — the river is waiting.
-                    </p>
-                    <Button href="/rooms" variant="outline" className="mt-4">
-                        Find your lodge
-                    </Button>
-                </div>
+                <EmptyState
+                    className="mt-4"
+                    title="No stays booked yet"
+                    hint="The river is waiting."
+                    action={
+                        <Button href="/rooms" variant="outline">
+                            Find your lodge
+                        </Button>
+                    }
+                />
             ) : (
                 <ul className="mt-4 space-y-3">
                     {bookings.map((booking) => (

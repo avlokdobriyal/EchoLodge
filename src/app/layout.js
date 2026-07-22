@@ -5,6 +5,7 @@ import Footer from "../components/Footer";
 import { ThemeProvider } from "../components/ThemeContext";
 import { ToastProvider } from "../components/ui/Toast";
 import SessionProvider from "../components/SessionProvider";
+import ErrorBoundary from "../components/ErrorBoundary";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -53,7 +54,9 @@ export default function RootLayout({ children }) {
           <ThemeProvider>
             <ToastProvider>
               <Navbar />
-              <main className="flex-grow">{children}</main>
+              <main className="flex-grow">
+                <ErrorBoundary>{children}</ErrorBoundary>
+              </main>
               <Footer />
             </ToastProvider>
           </ThemeProvider>
