@@ -69,6 +69,20 @@ router.get('/admin/all', requireAuth, requireAdmin, async (req, res, next) => {
   }
 });
 
+// --- GET /api/reviews/mine — the authenticated user's own reviews ---------
+// (Registered before /:id so "mine" isn't captured as an id.)
+router.get('/mine', requireAuth, async (req, res, next) => {
+  try {
+    const reviews = await prisma.review.findMany({
+      where: { authorId: Number(req.user.id) },
+      orderBy: { createdAt: 'desc' },
+    });
+    res.status(200).json(reviews.map(toPublic));
+  } catch (err) {
+    next(err);
+  }
+});
+
 // --- GET /api/reviews — public list ---------------------------------------
 router.get('/', async (req, res, next) => {
   try {

@@ -1,5 +1,5 @@
 import Hero from "../components/Hero";
-import Card from "../components/Card";
+import FeaturedStays from "../components/FeaturedStays";
 
 const features = [
   {
@@ -30,28 +30,11 @@ export default function Home() {
             Featured stays
           </h2>
           <p className="mt-3 text-ink-soft dark:text-parchment/70">
-            A handpicked pair to start with — more from the community coming soon.
+            Live from our inventory — real rooms, real prices, bookable right now.
           </p>
         </div>
 
-        <div className="mt-10 grid grid-cols-1 md:grid-cols-2 gap-8">
-          <div className="card-lift animate-fade-in-up delay-100 rounded-3xl">
-            <Card
-              title="Ganges View Room"
-              desc="Wake up to the serene sounds of the holy Ganges. A perfect blend of comfort and tranquility."
-              tag="Popular"
-              rating={4.8}
-            />
-          </div>
-          <div className="card-lift animate-fade-in-up delay-200 rounded-3xl">
-            <Card
-              title="Forest Retreat"
-              desc="Immerse yourself in nature with this secluded, minimalist stay surrounded by lush greenery."
-              tag="Eco-Friendly"
-              rating={4.6}
-            />
-          </div>
-        </div>
+        <FeaturedStays />
       </section>
 
       <section className="border-t border-sand dark:border-bark-soft bg-sand/40 dark:bg-bark-soft/40">

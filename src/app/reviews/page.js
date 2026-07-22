@@ -34,6 +34,14 @@ async function apiList() {
   if (!res.ok) throw new Error("Failed to load reviews");
   return res.json();
 }
+// The signed-in user's own reviews, resolved server-side from the JWT.
+async function apiListMine(token) {
+  const res = await fetch(`${API}/mine`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) throwForStatus(res, "Failed to load your reviews");
+  return res.json();
+}
 async function apiCreate(data, token) {
   const res = await fetch(API, {
     method: "POST",
@@ -69,6 +77,9 @@ function ReviewsContent() {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [deletingId, setDeletingId] = useState(null);
+  // "all" = every guest review (public data); "mine" = only the signed-in
+  // user's reviews, fetched with their JWT.
+  const [scope, setScope] = useState("all");
 
   // Edit/Delete are restricted to the review's author or an admin. Legacy
   // reviews without an authorId are admin-only. (The backend enforces the
@@ -81,12 +92,13 @@ function ReviewsContent() {
 
   useEffect(() => {
     let active = true;
+    setIsLoading(true);
     (async () => {
       try {
-        const data = await apiList();
+        const data = scope === "mine" ? await apiListMine(token) : await apiList();
         if (active) setReviews(data);
       } catch (error) {
-        notify("Error fetching data", "error");
+        notify(error.message || "Error fetching data", "error");
       } finally {
         if (active) setIsLoading(false);
       }
@@ -94,7 +106,7 @@ function ReviewsContent() {
     return () => {
       active = false;
     };
-  }, []);
+  }, [scope, token]);
 
   // --- CRUD handlers (update local state, no full reload) ---------------
   const handleCreate = async (data) => {
@@ -150,16 +162,41 @@ function ReviewsContent() {
         </Button>
       </header>
 
+      {/* Scope toggle — everyone's reviews vs the signed-in user's own */}
+      <div className="mb-8 inline-flex rounded-full border border-sand dark:border-bark-soft bg-surface dark:bg-bark-soft p-1">
+        {[
+          { key: "all", label: "All reviews" },
+          { key: "mine", label: "My reviews" },
+        ].map((tab) => (
+          <button
+            key={tab.key}
+            type="button"
+            onClick={() => setScope(tab.key)}
+            className={`px-4 py-1.5 rounded-full text-sm font-medium transition-colors ${
+              scope === tab.key
+                ? "bg-forest text-parchment"
+                : "text-ink-soft dark:text-parchment/70 hover:text-forest dark:hover:text-moss"
+            }`}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
       {isLoading ? (
         <div className="flex justify-center items-center py-24">
           <Loader className="w-8 h-8 text-forest dark:text-moss" />
           <span className="ml-3 text-ink-soft dark:text-parchment/70">Loading reviews...</span>
         </div>
       ) : reviews.length === 0 ? (
-        <div className="rounded-3xl border border-dashed border-sand dark:border-bark-soft py-16 text-center">
-          <p className="text-ink-soft dark:text-parchment/60">No reviews yet.</p>
+        <div className="rounded-3xl border border-dashed border-sand dark:border-bark-soft py-16 text-center animate-fade-in">
+          <p className="text-ink-soft dark:text-parchment/60">
+            {scope === "mine"
+              ? "You haven't written a review yet — share your stay!"
+              : "No reviews yet — write the first one."}
+          </p>
           <Button variant="outline" onClick={() => setIsCreateOpen(true)} className="mt-4">
-            Add the first one
+            {scope === "mine" ? "Write my first review" : "Add the first one"}
           </Button>
         </div>
       ) : (
