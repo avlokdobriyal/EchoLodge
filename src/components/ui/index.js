@@ -3,5 +3,6 @@ export { default as Input } from "./Input";
 export { default as Select } from "./Select";
 export { default as Textarea } from "./Textarea";
 export { default as Modal } from "./Modal";
+export { default as ConfirmDialog } from "./ConfirmDialog";
 export { default as Loader } from "./Loader";
 export { ToastProvider, notify } from "./Toast";

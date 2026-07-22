@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect, useCallback } from "react";
 import { useSession } from "next-auth/react";
-import { Button, Input, Loader, notify } from "@/components/ui/index.js";
+import { Button, Input, Loader, ConfirmDialog, notify } from "@/components/ui/index.js";
 import RequireAdmin from "@/components/RequireAdmin";
 import AdminTabs from "@/components/AdminTabs";
 
@@ -32,6 +32,9 @@ function AdminRoomsContent() {
   const [form, setForm] = useState(EMPTY_FORM);
   const [errors, setErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
+  // Room awaiting delete confirmation (null = dialog closed).
+  const [confirmDelete, setConfirmDelete] = useState(null);
+  const [deleting, setDeleting] = useState(false);
 
   const load = useCallback(async () => {
     try {
@@ -99,7 +102,7 @@ function AdminRoomsContent() {
   };
 
   const handleDelete = async (room) => {
-    if (!window.confirm(`Delete "${room.name}"? This also removes its bookings.`)) return;
+    setDeleting(true);
     try {
       const res = await fetch(`${API}/${room.id}`, {
         method: "DELETE",
@@ -114,6 +117,9 @@ function AdminRoomsContent() {
       setRooms((prev) => prev.filter((r) => r.id !== room.id));
     } catch {
       notify("Network error — is the backend running?", "error");
+    } finally {
+      setDeleting(false);
+      setConfirmDelete(null);
     }
   };
 
@@ -209,7 +215,7 @@ function AdminRoomsContent() {
                       {room.category} · {formatINR(room.pricePerNight)}/night
                     </p>
                   </div>
-                  <Button variant="danger" size="sm" onClick={() => handleDelete(room)}>
+                  <Button variant="danger" size="sm" onClick={() => setConfirmDelete(room)}>
                     Delete
                   </Button>
                 </li>
@@ -218,6 +224,16 @@ function AdminRoomsContent() {
           )}
         </div>
       </div>
+
+      <ConfirmDialog
+        isOpen={confirmDelete !== null}
+        onClose={() => setConfirmDelete(null)}
+        onConfirm={() => handleDelete(confirmDelete)}
+        title={`Delete "${confirmDelete?.name ?? ""}"?`}
+        message="The room and all of its bookings will be permanently removed. This cannot be undone."
+        confirmLabel="Delete room"
+        busy={deleting}
+      />
     </div>
   );
 }

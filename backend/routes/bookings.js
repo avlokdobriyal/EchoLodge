@@ -168,4 +168,57 @@ router.get('/', requireAuth, async (req, res, next) => {
   }
 });
 
+// Only the booking's owner or an admin may change it.
+function canModify(booking, user) {
+  return user.role === 'ADMIN' || booking.userId === Number(user.id);
+}
+
+// --- PATCH /api/bookings/:id/cancel — soft-cancel a booking ----------------
+router.patch('/:id/cancel', requireAuth, async (req, res, next) => {
+  const bookingId = parseInt(req.params.id, 10);
+  try {
+    const existing = Number.isNaN(bookingId)
+      ? null
+      : await prisma.booking.findUnique({ where: { id: bookingId } });
+    if (!existing) {
+      return res.status(404).json({ error: 'Booking not found' });
+    }
+    if (!canModify(existing, req.user)) {
+      return res.status(403).json({ error: 'You can only cancel your own bookings' });
+    }
+    if (existing.status === 'CANCELLED') {
+      return res.status(409).json({ error: 'Booking is already cancelled' });
+    }
+
+    const updated = await prisma.booking.update({
+      where: { id: bookingId },
+      data: { status: 'CANCELLED' },
+      include: { room: { select: { name: true, category: true } } },
+    });
+    res.status(200).json(updated);
+  } catch (err) {
+    next(err);
+  }
+});
+
+// --- DELETE /api/bookings/:id — remove a booking record --------------------
+router.delete('/:id', requireAuth, async (req, res, next) => {
+  const bookingId = parseInt(req.params.id, 10);
+  try {
+    const existing = Number.isNaN(bookingId)
+      ? null
+      : await prisma.booking.findUnique({ where: { id: bookingId } });
+    if (!existing) {
+      return res.status(404).json({ error: 'Booking not found' });
+    }
+    if (!canModify(existing, req.user)) {
+      return res.status(403).json({ error: 'You can only remove your own bookings' });
+    }
+    await prisma.booking.delete({ where: { id: bookingId } });
+    res.status(204).send();
+  } catch (err) {
+    next(err);
+  }
+});
+
 module.exports = router;

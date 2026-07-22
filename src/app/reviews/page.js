@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
-import { Button, Loader, Modal, notify } from "@/components/ui/index.js";
+import { Button, Loader, Modal, ConfirmDialog, notify } from "@/components/ui/index.js";
 import ReviewForm from "@/components/ReviewForm";
 import RequireAuth from "@/components/RequireAuth";
 import { SentimentBadge, RatingStars } from "@/components/ReviewMeta";
@@ -77,6 +77,8 @@ function ReviewsContent() {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [deletingId, setDeletingId] = useState(null);
+  // Review awaiting delete confirmation (null = dialog closed).
+  const [confirmDeleteId, setConfirmDeleteId] = useState(null);
   // "all" = every guest review (public data); "mine" = only the signed-in
   // user's reviews, fetched with their JWT.
   const [scope, setScope] = useState("all");
@@ -132,7 +134,6 @@ function ReviewsContent() {
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm("Delete this review? This cannot be undone.")) return;
     setDeletingId(id);
     try {
       await apiDelete(id, token);
@@ -142,6 +143,7 @@ function ReviewsContent() {
       notify(error.message, "error");
     } finally {
       setDeletingId(null);
+      setConfirmDeleteId(null);
     }
   };
 
@@ -275,7 +277,7 @@ function ReviewsContent() {
                       <Button
                         variant="danger"
                         size="sm"
-                        onClick={() => handleDelete(review.id)}
+                        onClick={() => setConfirmDeleteId(review.id)}
                         disabled={deletingId === review.id}
                       >
                         {deletingId === review.id ? "Deleting…" : "Delete"}
@@ -296,6 +298,16 @@ function ReviewsContent() {
           onCancel={() => setIsCreateOpen(false)}
         />
       </Modal>
+
+      <ConfirmDialog
+        isOpen={confirmDeleteId !== null}
+        onClose={() => setConfirmDeleteId(null)}
+        onConfirm={() => handleDelete(confirmDeleteId)}
+        title="Delete this review?"
+        message="The review and its AI analysis will be permanently removed. This cannot be undone."
+        confirmLabel="Delete review"
+        busy={deletingId !== null}
+      />
     </div>
   );
 }
