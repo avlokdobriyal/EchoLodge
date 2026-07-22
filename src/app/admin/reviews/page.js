@@ -20,6 +20,32 @@ function ReviewCard({ review, token, onPublished }) {
   // Draft priority: what the admin already published > the AI's suggestion.
   const [draft, setDraft] = useState(review.adminReply ?? review.suggestedReply ?? "");
   const [publishing, setPublishing] = useState(false);
+  const [regenerating, setRegenerating] = useState(false);
+
+  // Re-run the Gemini analysis for this review — refreshes sentiment, tags,
+  // and the suggested reply (handy after an AI outage left them empty).
+  const regenerate = async () => {
+    setRegenerating(true);
+    try {
+      const res = await fetch(`${API}/${review.id}/regenerate`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        notify(data.error || "Could not refresh the AI analysis", "error");
+        return;
+      }
+      notify("AI analysis refreshed", "success");
+      onPublished(data);
+      // Adopt the fresh draft unless the admin already published a reply.
+      if (!data.adminReplied && data.suggestedReply) setDraft(data.suggestedReply);
+    } catch {
+      notify("Network error — is the backend running?", "error");
+    } finally {
+      setRegenerating(false);
+    }
+  };
 
   const publish = async () => {
     if (!draft.trim()) {
@@ -109,11 +135,23 @@ function ReviewCard({ review, token, onPublished }) {
               </span>
             )}
           </label>
-          {!review.adminReplied && review.suggestedReply && (
-            <span className="text-xs text-ink-soft/70 dark:text-parchment/40">
-              ✨ Drafted by AI — edit freely
-            </span>
-          )}
+          <div className="flex items-center gap-3">
+            {!review.adminReplied && review.suggestedReply && (
+              <span className="hidden sm:inline text-xs text-ink-soft/70 dark:text-parchment/40">
+                ✨ Drafted by AI — edit freely
+              </span>
+            )}
+            <button
+              type="button"
+              onClick={regenerate}
+              disabled={regenerating}
+              className={`text-xs font-medium text-forest dark:text-moss hover:text-forest-light dark:hover:text-parchment transition-colors disabled:opacity-60 ${
+                regenerating ? "animate-pulse" : ""
+              }`}
+            >
+              {regenerating ? "✨ Analysing…" : "↻ Regenerate AI draft"}
+            </button>
+          </div>
         </div>
         <textarea
           rows={3}

@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 import { useSession } from "next-auth/react";
-import { Button, Loader, notify } from "@/components/ui/index.js";
+import { Button, notify } from "@/components/ui/index.js";
 import RequireAuth from "@/components/RequireAuth";
 
 const API = "http://localhost:5000/api/ai/itinerary";
@@ -188,11 +188,31 @@ function ConciergeContent() {
       </form>
 
       {loading && (
-        <div className="mt-10 flex flex-col items-center gap-3 py-10">
-          <Loader className="w-8 h-8 text-forest dark:text-moss" />
-          <p className="text-sm text-ink-soft dark:text-parchment/60">
-            Consulting our local concierge — this takes a few seconds…
-          </p>
+        <div className="mt-10 rounded-3xl bg-surface dark:bg-bark-soft border border-sand dark:border-bark-soft shadow-sm p-6 sm:p-8 animate-fade-in">
+          <div className="flex items-center gap-3">
+            <span className="flex items-end gap-1.5" aria-hidden="true">
+              {[0, 150, 300].map((delay) => (
+                <span
+                  key={delay}
+                  className="h-2 w-2 rounded-full bg-forest dark:bg-moss animate-bounce"
+                  style={{ animationDelay: `${delay}ms` }}
+                />
+              ))}
+            </span>
+            <p className="text-sm text-ink-soft dark:text-parchment/60">
+              Consulting our local concierge — crafting your days…
+            </p>
+          </div>
+          {/* Shimmer skeleton of the itinerary that's on its way */}
+          <div className="mt-6 space-y-3 animate-pulse" aria-hidden="true">
+            <div className="h-5 w-1/3 rounded-full bg-sand dark:bg-bark" />
+            <div className="h-3 w-full rounded-full bg-sand dark:bg-bark" />
+            <div className="h-3 w-5/6 rounded-full bg-sand dark:bg-bark" />
+            <div className="h-3 w-2/3 rounded-full bg-sand dark:bg-bark" />
+            <div className="h-5 w-1/4 rounded-full bg-sand dark:bg-bark mt-6" />
+            <div className="h-3 w-full rounded-full bg-sand dark:bg-bark" />
+            <div className="h-3 w-3/4 rounded-full bg-sand dark:bg-bark" />
+          </div>
         </div>
       )}
 

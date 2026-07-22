@@ -191,6 +191,45 @@ router.delete('/:id', requireAuth, async (req, res, next) => {
   }
 });
 
+// --- POST /api/reviews/:id/regenerate — admin re-runs the AI analysis ------
+// Useful when the original submission happened during an AI outage (null
+// fields) or the admin wants a fresh draft reply.
+router.post('/:id/regenerate', requireAuth, requireAdmin, async (req, res, next) => {
+  const reviewId = parseInt(req.params.id, 10);
+  try {
+    const existing = Number.isNaN(reviewId)
+      ? null
+      : await prisma.review.findUnique({ where: { id: reviewId } });
+    if (!existing) {
+      return res.status(404).json({ error: 'Review not found' });
+    }
+
+    const ai = await analyzeReview({
+      guestName: existing.guestName,
+      roomType: existing.roomType,
+      reviewText: existing.reviewText,
+      rating: existing.rating,
+    });
+    if (!ai) {
+      return res.status(502).json({
+        error: 'The AI analyst is unavailable right now — please try again in a moment',
+      });
+    }
+
+    const updated = await prisma.review.update({
+      where: { id: reviewId },
+      data: {
+        sentiment: ai.sentiment,
+        aiTags: ai.aiTags,
+        suggestedReply: ai.suggestedReply,
+      },
+    });
+    res.status(200).json(updated);
+  } catch (err) {
+    next(err);
+  }
+});
+
 // --- POST /api/reviews/:id/reply — admin publishes a reply ----------------
 router.post('/:id/reply', requireAuth, requireAdmin, async (req, res, next) => {
   const reviewId = parseInt(req.params.id, 10);
