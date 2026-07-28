@@ -92,6 +92,11 @@ Another developer can point this project at their own database in three steps:
    npx prisma generate
    ```
 
-### Schema Diagram
+## Live Deployment
+The application is fully deployed and accessible at: **https://echolodge.vercel.app**
 
-![Database Schema](./W5_SchemaDiagram_TBI-26101274.png)
+### Architecture
+*   **Frontend:** Deployed on Vercel
+*   **Backend:** Deployed on Render
+*   **Database:** Supabase
+*   **Authentication:** NextAuth (Google Provider)
