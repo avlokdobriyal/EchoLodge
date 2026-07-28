@@ -4,8 +4,9 @@ import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Button, Input, notify } from "@/components/ui/index.js";
+import { API_BASE } from "@/lib/api";
 
-const BACKEND = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
+const BACKEND = API_BASE;
 
 export default function RegisterPage() {
     const router = useRouter();

@@ -1,7 +1,13 @@
 import CredentialsProvider from "next-auth/providers/credentials";
 import GoogleProvider from "next-auth/providers/google";
 
-const BACKEND = process.env.BACKEND_URL || "http://localhost:5000";
+// Server-side (NextAuth callbacks run on the Vercel server, not the browser),
+// so a private BACKEND_URL wins if set; otherwise reuse the public API URL so
+// one Vercel env var covers both sides. Falls back to localhost in dev.
+const BACKEND =
+  process.env.BACKEND_URL ||
+  process.env.NEXT_PUBLIC_API_URL ||
+  "http://localhost:5000";
 
 export const authOptions = {
   providers: [

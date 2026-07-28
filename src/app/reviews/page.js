@@ -6,8 +6,9 @@ import ReviewForm from "@/components/ReviewForm";
 import RequireAuth from "@/components/RequireAuth";
 import { SentimentBadge, RatingStars } from "@/components/ReviewMeta";
 import EmptyState from "@/components/EmptyState";
+import { API_BASE } from "@/lib/api";
 
-const API = "http://localhost:5000/api/reviews";
+const API = `${API_BASE}/api/reviews`;
 
 function formatDate(value) {
   if (!value) return null;

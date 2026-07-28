@@ -4,8 +4,9 @@ import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { Button, Input, Modal, Loader, notify } from "@/components/ui/index.js";
 import EmptyState from "@/components/EmptyState";
+import { API_BASE } from "@/lib/api";
 
-const API = "http://localhost:5000/api";
+const API = `${API_BASE}/api`;
 
 // Presentation metadata per DB room category. Inventory itself is derived from
 // the live rooms list, never hardcoded.

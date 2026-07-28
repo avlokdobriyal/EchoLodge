@@ -3,8 +3,9 @@ import { useState } from "react";
 import { useSession } from "next-auth/react";
 import { Button, notify } from "@/components/ui/index.js";
 import RequireAuth from "@/components/RequireAuth";
+import { API_BASE } from "@/lib/api";
 
-const API = "http://localhost:5000/api/ai/itinerary";
+const API = `${API_BASE}/api/ai/itinerary`;
 
 const SUGGESTIONS = [
   "3 relaxed days of yoga and riverside cafes",

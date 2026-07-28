@@ -5,8 +5,9 @@ import { Button, Input, Loader, ConfirmDialog, notify } from "@/components/ui/in
 import RequireAdmin from "@/components/RequireAdmin";
 import AdminTabs from "@/components/AdminTabs";
 import EmptyState from "@/components/EmptyState";
+import { API_BASE } from "@/lib/api";
 
-const API = "http://localhost:5000/api/rooms";
+const API = `${API_BASE}/api/rooms`;
 
 const CATEGORIES = [
   "Ganga View Balcony",

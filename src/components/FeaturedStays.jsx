@@ -1,8 +1,9 @@
 "use client";
 import { useState, useEffect } from "react";
 import Card from "./Card";
+import { API_BASE } from "@/lib/api";
 
-const API = "http://localhost:5000/api/rooms";
+const API = `${API_BASE}/api/rooms`;
 
 const CATEGORY_TAGS = {
   "Ganga View Balcony": "River view",

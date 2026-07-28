@@ -4,8 +4,9 @@ import { useSession, signOut } from "next-auth/react";
 import { Button, Loader, ConfirmDialog, notify } from "@/components/ui/index.js";
 import RequireAuth from "@/components/RequireAuth";
 import EmptyState from "@/components/EmptyState";
+import { API_BASE } from "@/lib/api";
 
-const API = "http://localhost:5000/api/bookings";
+const API = `${API_BASE}/api/bookings`;
 
 // Hoisted: built once per module rather than once per call.
 const INR = new Intl.NumberFormat("en-IN", {

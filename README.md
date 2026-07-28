@@ -1,5 +1,33 @@
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
 
+## 🌐 Live Deployment
+
+| | URL |
+|---|---|
+| **Live Frontend (Vercel)** | `<YOUR_VERCEL_URL — e.g. https://echolodge.vercel.app>` |
+| **Live Backend (Render)** | `<YOUR_RENDER_URL — e.g. https://echolodge-api.onrender.com>` |
+
+> Known limitations on free tier: The Render backend free tier spins down after 15 minutes of inactivity. The first request after being idle takes 30–60 seconds to wake up.
+
+### Tech Stack
+
+- **Frontend:** Next.js 16 (App Router) · React 19 · Tailwind CSS v4 · NextAuth (Credentials + Google OAuth) — deployed on **Vercel**
+- **Backend:** Node.js · Express 5 · Zod validation · JWT auth · express-rate-limit — deployed on **Render**
+- **Database:** PostgreSQL on **Supabase** (transaction pooler) via **Prisma ORM**
+- **AI:** Google Gemini (`gemini-flash-latest`) — review sentiment analysis, drafted admin replies, and the trip-planning AI Concierge
+
+### Environment Variables
+
+Copy the example files and fill in real values (never commit the real `.env` files):
+
+```bash
+cp .env.example .env                  # frontend (NextAuth, Google OAuth, API URL)
+cp backend/.env.example backend/.env  # backend (Supabase, JWT, Gemini, CORS)
+```
+
+- **Vercel (frontend):** `NEXT_PUBLIC_API_URL` → the live Render URL, plus `NEXTAUTH_SECRET`, `NEXTAUTH_URL`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`
+- **Render (backend):** `DATABASE_URL`, `DIRECT_URL`, `JWT_SECRET`, `GEMINI_API_KEY`, `FRONTEND_URL` → the live Vercel URL
+
 ## Getting Started
 
 First, run the development server:
