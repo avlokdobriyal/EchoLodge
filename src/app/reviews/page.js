@@ -1,14 +1,15 @@
 "use client";
 import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
 import { Button, Loader, Modal, ConfirmDialog, notify } from "@/components/ui/index.js";
 import ReviewForm from "@/components/ReviewForm";
-import RequireAuth from "@/components/RequireAuth";
-import { SentimentBadge, RatingStars } from "@/components/ReviewMeta";
+import { SentimentBadge, RatingStars, VerifiedStayBadge } from "@/components/ReviewMeta";
 import EmptyState from "@/components/EmptyState";
 import { API_BASE } from "@/lib/api";
 
 const API = `${API_BASE}/api/reviews`;
+const BOOKINGS_API = `${API_BASE}/api/bookings`;
 
 function formatDate(value) {
   if (!value) return null;
@@ -34,6 +35,18 @@ function throwForStatus(res, fallback) {
 async function apiList() {
   const res = await fetch(API);
   if (!res.ok) throw new Error("Failed to load reviews");
+  return res.json();
+}
+// Public search across review text, sentiment, guest name and room type.
+async function apiSearch(q) {
+  const res = await fetch(`${API}/search?q=${encodeURIComponent(q)}`);
+  if (!res.ok) throw new Error("Search failed");
+  return res.json();
+}
+// The signed-in guest's stays, used to offer a verified-stay link on new reviews.
+async function apiMyBookings(token) {
+  const res = await fetch(BOOKINGS_API, { headers: { Authorization: `Bearer ${token}` } });
+  if (!res.ok) return [];
   return res.json();
 }
 // The signed-in user's own reviews, resolved server-side from the JWT.
@@ -70,12 +83,16 @@ async function apiDelete(id, token) {
   if (!res.ok) throwForStatus(res, "Failed to delete review");
 }
 
-function ReviewsContent() {
-  const { data: session } = useSession();
+export default function ReviewsPage() {
+  const { data: session, status } = useSession();
+  const router = useRouter();
   const token = session?.backendToken;
+  const isAuthed = status === "authenticated";
   const isAdmin = session?.user?.role === "ADMIN";
-  const [reviews, setReviews] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
+  // Results tagged with the query they belong to: { key, items } | null.
+  // "Still loading" is then just "the stored key isn't the current one", which
+  // avoids a separate flag that effects have to keep in step.
+  const [result, setResult] = useState(null);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [deletingId, setDeletingId] = useState(null);
@@ -84,6 +101,46 @@ function ReviewsContent() {
   // "all" = every guest review (public data); "mine" = only the signed-in
   // user's reviews, fetched with their JWT.
   const [scope, setScope] = useState("all");
+  // Raw input vs the debounced value actually sent to the API.
+  const [searchInput, setSearchInput] = useState("");
+  const [query, setQuery] = useState("");
+  // The guest's own stays, so a new review can be linked to one.
+  const [myBookings, setMyBookings] = useState([]);
+
+  // Reviews are public, so an anonymous visitor reads them freely; only the
+  // write actions below require signing in.
+  const requireSignIn = () => {
+    notify("Please sign in to write a review", "error");
+    router.push("/login");
+  };
+
+  // Debounce typing so we aren't firing a request per keystroke.
+  useEffect(() => {
+    const id = setTimeout(() => setQuery(searchInput.trim()), 300);
+    return () => clearTimeout(id);
+  }, [searchInput]);
+
+  // "My reviews" is meaningless when signed out, so derive the effective scope
+  // rather than correcting the stored one — signing back in restores the tab
+  // the guest had chosen.
+  const effectiveScope = isAuthed ? scope : "all";
+
+  // Identifies the exact list currently being asked for.
+  const resultKey = `${effectiveScope}|${query}|${token ? "auth" : "anon"}`;
+  const isLoading = result?.key !== resultKey;
+  const reviews = result?.key === resultKey ? result.items : [];
+
+  useEffect(() => {
+    if (!token) return;
+    let active = true;
+    apiMyBookings(token)
+      .then((b) => active && setMyBookings(b))
+      .catch(() => active && setMyBookings([]));
+    return () => {
+      active = false;
+      setMyBookings([]);
+    };
+  }, [token]);
 
   // Edit/Delete are restricted to the review's author or an admin. Legacy
   // reviews without an authorId are admin-only. (The backend enforces the
@@ -96,27 +153,40 @@ function ReviewsContent() {
 
   useEffect(() => {
     let active = true;
-    setIsLoading(true);
     (async () => {
       try {
-        const data = scope === "mine" ? await apiListMine(token) : await apiList();
-        if (active) setReviews(data);
+        let data;
+        if (effectiveScope === "mine") {
+          data = await apiListMine(token);
+          // "Mine" is a small set, so filter client-side rather than adding a
+          // scoped search endpoint.
+          if (query) {
+            const q = query.toLowerCase();
+            data = data.filter((r) =>
+              [r.reviewText, r.guestName, r.roomType, r.sentiment]
+                .filter(Boolean)
+                .some((f) => f.toLowerCase().includes(q))
+            );
+          }
+        } else {
+          data = query ? await apiSearch(query) : await apiList();
+        }
+        if (active) setResult({ key: resultKey, items: data });
       } catch (error) {
         notify(error.message || "Error fetching data", "error");
-      } finally {
-        if (active) setIsLoading(false);
+        if (active) setResult({ key: resultKey, items: [] });
       }
     })();
     return () => {
       active = false;
     };
-  }, [scope, token]);
+  }, [effectiveScope, token, query, resultKey]);
 
   // --- CRUD handlers (update local state, no full reload) ---------------
   const handleCreate = async (data) => {
     try {
       const created = await apiCreate(data, token);
-      setReviews((prev) => [created, ...prev]);
+      setResult((prev) => (prev ? { ...prev, items: [created, ...prev.items] } : prev));
       setIsCreateOpen(false);
       notify("Review added", "success");
     } catch (error) {
@@ -127,7 +197,9 @@ function ReviewsContent() {
   const handleUpdate = async (id, data) => {
     try {
       const updated = await apiUpdate(id, data, token);
-      setReviews((prev) => prev.map((r) => (r.id === id ? updated : r)));
+      setResult((prev) =>
+        prev ? { ...prev, items: prev.items.map((r) => (r.id === id ? updated : r)) } : prev
+      );
       setEditingId(null);
       notify("Review updated", "success");
     } catch (error) {
@@ -139,7 +211,9 @@ function ReviewsContent() {
     setDeletingId(id);
     try {
       await apiDelete(id, token);
-      setReviews((prev) => prev.filter((r) => r.id !== id));
+      setResult((prev) =>
+        prev ? { ...prev, items: prev.items.filter((r) => r.id !== id) } : prev
+      );
       notify("Review deleted", "success");
     } catch (error) {
       notify(error.message, "error");
@@ -158,33 +232,62 @@ function ReviewsContent() {
             Reviews
           </h1>
           <p className="mt-3 text-ink-soft dark:text-parchment/70">
-            What guests are saying about their stays with our hosts.
+            What guests are saying about their stays at the lodge.
           </p>
         </div>
-        <Button onClick={() => setIsCreateOpen(true)} className="shrink-0">
+        <Button
+          onClick={() => (isAuthed ? setIsCreateOpen(true) : requireSignIn())}
+          className="shrink-0"
+        >
           + New review
         </Button>
       </header>
 
-      {/* Scope toggle — everyone's reviews vs the signed-in user's own */}
-      <div className="mb-8 inline-flex rounded-full border border-sand dark:border-bark-soft bg-surface dark:bg-bark-soft p-1">
-        {[
-          { key: "all", label: "All reviews" },
-          { key: "mine", label: "My reviews" },
-        ].map((tab) => (
-          <button
-            key={tab.key}
-            type="button"
-            onClick={() => setScope(tab.key)}
-            className={`px-4 py-1.5 rounded-full text-sm font-medium transition-colors ${
-              scope === tab.key
-                ? "bg-forest text-parchment"
-                : "text-ink-soft dark:text-parchment/70 hover:text-forest dark:hover:text-moss"
-            }`}
+      <div className="mb-8 flex flex-col sm:flex-row sm:items-center gap-4">
+        {/* Scope toggle — everyone's reviews vs the signed-in guest's own.
+            "My reviews" only appears once there's a session to scope to. */}
+        {isAuthed && (
+          <div className="inline-flex shrink-0 rounded-full border border-sand dark:border-bark-soft bg-surface dark:bg-bark-soft p-1">
+            {[
+              { key: "all", label: "All reviews" },
+              { key: "mine", label: "My reviews" },
+            ].map((tab) => (
+              <button
+                key={tab.key}
+                type="button"
+                onClick={() => setScope(tab.key)}
+                className={`px-4 py-1.5 rounded-full text-sm font-medium transition-colors ${
+                  scope === tab.key
+                    ? "bg-forest text-parchment"
+                    : "text-ink-soft dark:text-parchment/70 hover:text-forest dark:hover:text-moss"
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {/* Search — hits GET /api/reviews/search for the public list. */}
+        <div className="relative flex-grow">
+          <svg
+            className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-soft/60 dark:text-parchment/40"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            aria-hidden="true"
           >
-            {tab.label}
-          </button>
-        ))}
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-4.35-4.35M17 11a6 6 0 11-12 0 6 6 0 0112 0z" />
+          </svg>
+          <input
+            type="search"
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
+            placeholder="Search reviews — a word, a room type, a guest…"
+            aria-label="Search reviews"
+            className="w-full rounded-full border border-sand dark:border-bark-soft bg-surface dark:bg-bark-soft py-2.5 pl-11 pr-4 text-sm text-ink dark:text-parchment placeholder-ink-soft/60 dark:placeholder-parchment/40 shadow-sm transition-colors focus:border-forest focus:outline-none focus:ring-2 focus:ring-forest/40"
+          />
+        </div>
       </div>
 
       {isLoading ? (
@@ -193,23 +296,38 @@ function ReviewsContent() {
           <span className="ml-3 text-ink-soft dark:text-parchment/70">Loading reviews...</span>
         </div>
       ) : reviews.length === 0 ? (
-        <EmptyState
-          title={
-            scope === "mine"
-              ? "You haven't written a review yet"
-              : "No reviews yet — write the first one"
-          }
-          hint={
-            scope === "mine"
-              ? "Share how your stay by the river felt."
-              : "Guest voices make EchoLodge what it is."
-          }
-          action={
-            <Button variant="outline" onClick={() => setIsCreateOpen(true)}>
-              {scope === "mine" ? "Write my first review" : "Add the first one"}
-            </Button>
-          }
-        />
+        query ? (
+          <EmptyState
+            title={`No reviews match “${query}”`}
+            hint="Try a different word, a room type, or a guest name."
+            action={
+              <Button variant="outline" onClick={() => setSearchInput("")}>
+                Clear search
+              </Button>
+            }
+          />
+        ) : (
+          <EmptyState
+            title={
+              effectiveScope === "mine"
+                ? "You haven't written a review yet"
+                : "No reviews yet — write the first one"
+            }
+            hint={
+              effectiveScope === "mine"
+                ? "Share how your stay by the river felt."
+                : "Guest voices make EchoLodge what it is."
+            }
+            action={
+              <Button
+                variant="outline"
+                onClick={() => (isAuthed ? setIsCreateOpen(true) : requireSignIn())}
+              >
+                {effectiveScope === "mine" ? "Write my first review" : "Add the first one"}
+              </Button>
+            }
+          />
+        )
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {reviews.map((review, index) =>
@@ -242,6 +360,7 @@ function ReviewsContent() {
                 <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mb-4">
                   <p className="text-sm text-clay font-medium">{review.roomType}</p>
                   <RatingStars rating={review.rating} />
+                  <VerifiedStayBadge verified={review.verifiedStay} />
                 </div>
                 <p className="text-ink-soft dark:text-parchment/80 leading-relaxed grow">
                   &ldquo;{review.reviewText}&rdquo;
@@ -303,6 +422,8 @@ function ReviewsContent() {
       <Modal isOpen={isCreateOpen} onClose={() => setIsCreateOpen(false)} title="Add a review">
         <ReviewForm
           submitLabel="Submit Review"
+          bookings={myBookings}
+          defaultGuestName={session?.user?.name ?? ""}
           onSubmit={handleCreate}
           onCancel={() => setIsCreateOpen(false)}
         />
@@ -318,13 +439,5 @@ function ReviewsContent() {
         busy={deletingId !== null}
       />
     </div>
-  );
-}
-
-export default function ReviewsPage() {
-  return (
-    <RequireAuth>
-      <ReviewsContent />
-    </RequireAuth>
   );
 }

@@ -3,18 +3,18 @@ import FeaturedStays from "../components/FeaturedStays";
 
 const features = [
   {
-    title: "Zero commission",
-    desc: "Every rupee goes to the host and the community — never a booking platform.",
+    title: "Booked direct",
+    desc: "No travel-site commission skimmed off the top — you pay us, we set the rate.",
     icon: "M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8V6m0 12v-2",
   },
   {
     title: "Rooted in nature",
-    desc: "Stays chosen for their footprint, from riverside rooms to forest retreats.",
+    desc: "Solar hot water, local sourcing, and no single-use plastic anywhere on site.",
     icon: "M12 3v18m0 0c-3.5 0-6-2.5-6-6 3.5 0 6 2.5 6 6zm0-6c0-3.5 2.5-6 6-6 0 3.5-2.5 6-6 6z",
   },
   {
-    title: "Hosted by locals",
-    desc: "Real people from Laxman Jhula who know the river, the trails, and the chai.",
+    title: "Run by the family",
+    desc: "The same people at the desk, on the terrace, and pouring the morning chai.",
     icon: "M17 20h5v-2a4 4 0 00-3-3.87M9 20H4v-2a4 4 0 013-3.87m6-1.13a4 4 0 10-4 0M12 4a4 4 0 100 8 4 4 0 000-8z",
   },
 ];
@@ -27,10 +27,11 @@ export default function Home() {
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
         <div className="max-w-2xl">
           <h2 className="font-display text-3xl md:text-4xl font-semibold text-ink dark:text-parchment">
-            Featured stays
+            Our rooms
           </h2>
           <p className="mt-3 text-ink-soft dark:text-parchment/70">
-            Live from our inventory — real rooms, real prices, bookable right now.
+            Three ways to stay, straight from our live inventory — real rooms,
+            real prices, bookable right now.
           </p>
         </div>
 

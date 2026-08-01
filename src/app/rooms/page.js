@@ -1,41 +1,15 @@
 "use client";
 import { useState, useEffect, useMemo } from "react";
+import Image from "next/image";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { Button, Input, Modal, Loader, notify } from "@/components/ui/index.js";
 import EmptyState from "@/components/EmptyState";
 import { API_BASE } from "@/lib/api";
+import { CATEGORY_META, metaFor } from "@/lib/categories";
+import { useSlowLoad } from "@/lib/useSlowLoad";
 
 const API = `${API_BASE}/api`;
-
-// Presentation metadata per DB room category. Inventory itself is derived from
-// the live rooms list, never hardcoded.
-const CATEGORY_META = {
-  "Ganga View Balcony": {
-    label: "Ganga Balcony",
-    tagline: "Private balconies opening straight onto the river",
-    highlights: ["Ganga-facing balcony", "Sunrise aarti views", "Complimentary terrace access"],
-    accent: "from-forest/90 to-forest-light/80",
-    chip: "bg-forest/10 text-forest dark:bg-moss/20 dark:text-moss",
-    order: 1,
-  },
-  "Standard Balcony": {
-    label: "Standard Balcony",
-    tagline: "Calm, comfortable rooms in the heart of the lodge",
-    highlights: ["Garden-side balcony", "Warm minimalist interiors", "Complimentary terrace access"],
-    accent: "from-clay/80 to-clay-dark/80",
-    chip: "bg-sand text-ink-soft dark:bg-bark dark:text-parchment/70",
-    order: 2,
-  },
-  "Super Deluxe Ganga View Suite": {
-    label: "Super Deluxe Ganga View Suite",
-    tagline: "Our finest suites — panoramic river views and space to breathe",
-    highlights: ["Panoramic Ganga suite", "Separate lounge area", "Complimentary terrace access"],
-    accent: "from-bark/90 to-bark-soft/90",
-    chip: "bg-clay/15 text-clay-dark dark:bg-clay/25 dark:text-clay",
-    order: 3,
-  },
-};
 
 // Hoisted: Intl.NumberFormat construction is expensive relative to .format(),
 // so build it once per module rather than once per call.
@@ -80,7 +54,7 @@ function groupByCategory(rooms) {
 
 // Quantity stepper strictly clamped to [1, max] — max is the category's
 // live inventory (5 / 5 / 2), so overbooking can't even be requested.
-function QuantityStepper({ value, max, onChange }) {
+function QuantityStepper({ value, max, subtitle, onChange }) {
   const decrement = () => onChange(Math.max(1, value - 1));
   const increment = () => onChange(Math.min(max, value + 1));
   const stepBtn =
@@ -90,7 +64,7 @@ function QuantityStepper({ value, max, onChange }) {
     <div className="flex items-center justify-between">
       <div>
         <p className="text-sm font-medium text-ink dark:text-parchment">Rooms</p>
-        <p className="text-xs text-ink-soft dark:text-parchment/50">{max} available in this category</p>
+        <p className="text-xs text-ink-soft dark:text-parchment/50">{subtitle}</p>
       </div>
       <div className="flex items-center gap-3">
         <button type="button" onClick={decrement} disabled={value <= 1} aria-label="Fewer rooms" className={stepBtn}>
@@ -108,13 +82,7 @@ function QuantityStepper({ value, max, onChange }) {
 }
 
 function CategoryTile({ group, index, onOpen }) {
-  const meta = CATEGORY_META[group.category] ?? {
-    label: group.category,
-    tagline: "",
-    highlights: [],
-    accent: "from-forest/90 to-forest-light/80",
-    chip: "bg-sand text-ink-soft",
-  };
+  const meta = metaFor(group.category);
 
   return (
     <button
@@ -122,9 +90,21 @@ function CategoryTile({ group, index, onOpen }) {
       onClick={() => onOpen(group)}
       className={`card-lift animate-fade-in-up delay-${(index + 1) * 100} group flex flex-col text-left rounded-3xl bg-surface dark:bg-bark-soft border border-sand dark:border-bark-soft shadow-sm overflow-hidden focus:outline-none focus:ring-2 focus:ring-forest/40`}
     >
-      {/* Banner — gradient stand-in for photography, shimmers on hover */}
-      <div className={`relative h-36 bg-gradient-to-br ${meta.accent}`}>
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_20%,rgba(255,255,255,0.25),transparent_55%)] opacity-70 transition-opacity duration-500 group-hover:opacity-100" />
+      {/* Banner — the room photo, with the gradient as a fallback for any
+          category added later that has no image yet. */}
+      <div className={`relative h-48 overflow-hidden bg-gradient-to-br ${meta.accent}`}>
+        {meta.image && (
+          <Image
+            src={meta.image}
+            alt={`${meta.label} at EchoLodge`}
+            fill
+            sizes="(max-width: 768px) 100vw, 33vw"
+            className="object-cover transition-transform duration-500 group-hover:scale-105"
+            priority={index === 0}
+          />
+        )}
+        {/* Scrim keeps the price chip legible over any photo. */}
+        <div className="absolute inset-0 bg-gradient-to-t from-bark/70 via-bark/10 to-transparent" />
         <span className="absolute bottom-3 left-4 rounded-full bg-cream/90 dark:bg-bark/90 px-3 py-1 text-xs font-semibold text-ink dark:text-parchment shadow-sm">
           {group.inventory} room{group.inventory > 1 ? "s" : ""} · {formatINR(group.pricePerNight)}/night
         </span>
@@ -135,7 +115,7 @@ function CategoryTile({ group, index, onOpen }) {
           {group.category}
         </span>
         <h3 className="mt-4 font-display text-2xl font-semibold text-ink dark:text-parchment">
-          {meta.label}
+          {meta.shortLabel}
         </h3>
         <p className="mt-2 text-sm text-ink-soft dark:text-parchment/70 flex-grow leading-relaxed">
           {meta.tagline}
@@ -157,20 +137,60 @@ function CategoryBookingModal({ group, isOpen, onClose, session, router }) {
   const [quantity, setQuantity] = useState(1);
   const [errors, setErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
+  // The server's answer, tagged with the exact range it was fetched for:
+  // { key, data } | null. Tagging lets "is this answer still current?" and
+  // "are we still waiting?" both be derived at render time instead of tracked
+  // with extra state that effects have to keep in sync.
+  const [availability, setAvailability] = useState(null);
 
-  // Reset the fields whenever a different category's modal opens.
+  const category = group?.category;
+  // A valid range is the precondition for asking about availability at all.
+  const rangeIsValid = Boolean(
+    category && checkIn && checkOut && new Date(checkOut) > new Date(checkIn)
+  );
+  const rangeKey = rangeIsValid ? `${category}|${checkIn}|${checkOut}` : null;
+
+  // Ask the server how many rooms are actually free as soon as we have a valid
+  // range, so the guest sees availability before filling anything else in
+  // rather than being rejected with a 409 after pressing Confirm.
   useEffect(() => {
-    setCheckIn("");
-    setCheckOut("");
-    setQuantity(1);
-    setErrors({});
-  }, [group?.category]);
+    if (!rangeKey) return;
+
+    let cancelled = false;
+    const params = new URLSearchParams({ category, checkIn, checkOut });
+
+    (async () => {
+      try {
+        const res = await fetch(`${API}/rooms/availability?${params}`);
+        if (!res.ok) throw new Error("lookup failed");
+        const data = await res.json();
+        if (!cancelled) setAvailability({ key: rangeKey, data });
+      } catch {
+        // Non-fatal: record the attempt so we stop showing a spinner, and let
+        // the server have the final word when the guest submits.
+        if (!cancelled) setAvailability({ key: rangeKey, data: null });
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [rangeKey, category, checkIn, checkOut]);
 
   if (!group) return null;
 
-  const meta = CATEGORY_META[group.category] ?? { label: group.category, highlights: [] };
+  // An answer only counts when it belongs to the range currently on screen.
+  const liveAvailability = availability?.key === rangeKey ? availability.data : null;
+  const isChecking = rangeIsValid && availability?.key !== rangeKey;
+
+  // Derived rather than stored, so the stepper can never sit above what's free.
+  const maxSelectable = Math.max(1, liveAvailability?.available ?? group.inventory);
+  const effectiveQuantity = Math.min(Math.max(1, quantity), maxSelectable);
+
+  const meta = metaFor(group.category);
   const nights = nightsBetween(checkIn, checkOut);
-  const total = nights * group.pricePerNight * quantity;
+  const total = nights * group.pricePerNight * effectiveQuantity;
+  const soldOut = liveAvailability?.available === 0;
 
   const validate = () => {
     const next = {};
@@ -204,7 +224,7 @@ function CategoryBookingModal({ group, isOpen, onClose, session, router }) {
           "Content-Type": "application/json",
           Authorization: `Bearer ${session.backendToken}`,
         },
-        body: JSON.stringify({ category: group.category, quantity, checkIn, checkOut }),
+        body: JSON.stringify({ category: group.category, quantity: effectiveQuantity, checkIn, checkOut }),
       });
       const data = await res.json().catch(() => ({}));
       if (res.status === 401) {
@@ -217,7 +237,7 @@ function CategoryBookingModal({ group, isOpen, onClose, session, router }) {
         return;
       }
       notify(
-        `Booked ${quantity} × ${meta.label} for ${nights} night${nights > 1 ? "s" : ""}!`,
+        `Booked ${effectiveQuantity} × ${meta.label} for ${nights} night${nights > 1 ? "s" : ""}!`,
         "success"
       );
       onClose();
@@ -229,8 +249,20 @@ function CategoryBookingModal({ group, isOpen, onClose, session, router }) {
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title={meta.label}>
+    <Modal isOpen={isOpen} onClose={onClose} title={meta.shortLabel}>
       <form onSubmit={handleSubmit} noValidate className="space-y-5">
+        {meta.image && (
+          <div className="relative h-44 w-full overflow-hidden rounded-2xl">
+            <Image
+              src={meta.image}
+              alt={`${meta.label} at EchoLodge`}
+              fill
+              sizes="(max-width: 640px) 100vw, 480px"
+              className="object-cover"
+            />
+          </div>
+        )}
+
         <p className="text-sm text-ink-soft dark:text-parchment/70 leading-relaxed">
           {group.description}
         </p>
@@ -270,12 +302,51 @@ function CategoryBookingModal({ group, isOpen, onClose, session, router }) {
           error={errors.checkOut}
         />
 
-        <QuantityStepper value={quantity} max={group.inventory} onChange={setQuantity} />
+        {/* Live availability for the chosen range, resolved before submit. */}
+        {(isChecking || liveAvailability) && (
+          <div
+            className={`rounded-2xl border p-4 text-sm animate-fade-in ${
+              soldOut
+                ? "border-clay/40 bg-clay/10 text-clay-dark dark:text-clay"
+                : "border-sand dark:border-bark-soft bg-canvas dark:bg-bark text-ink-soft dark:text-parchment/70"
+            }`}
+          >
+            {isChecking ? (
+              <span className="flex items-center gap-2">
+                <Loader className="w-4 h-4 text-forest dark:text-moss" />
+                Checking availability for these dates…
+              </span>
+            ) : soldOut ? (
+              <>
+                <span className="font-medium">Fully booked for these dates.</span> Try a
+                different range — other categories may still be free.
+              </>
+            ) : (
+              <>
+                <span className="font-medium text-ink dark:text-parchment">
+                  {liveAvailability.available} of {liveAvailability.inventory}
+                </span>{" "}
+                room{liveAvailability.available === 1 ? "" : "s"} available for these dates.
+              </>
+            )}
+          </div>
+        )}
+
+        <QuantityStepper
+          value={effectiveQuantity}
+          max={maxSelectable}
+          subtitle={
+            liveAvailability
+              ? `${liveAvailability.available} free for your dates`
+              : `${group.inventory} in this category`
+          }
+          onChange={setQuantity}
+        />
 
         {nights > 0 && (
           <div className="rounded-2xl bg-canvas dark:bg-bark p-4 flex items-center justify-between animate-fade-in">
             <span className="text-sm text-ink-soft dark:text-parchment/70">
-              {quantity} room{quantity > 1 ? "s" : ""} × {nights} night{nights > 1 ? "s" : ""} ×{" "}
+              {effectiveQuantity} room{effectiveQuantity > 1 ? "s" : ""} × {nights} night{nights > 1 ? "s" : ""} ×{" "}
               {formatINR(group.pricePerNight)}
             </span>
             <span className="font-display text-lg font-semibold text-ink dark:text-parchment">
@@ -284,8 +355,17 @@ function CategoryBookingModal({ group, isOpen, onClose, session, router }) {
           </div>
         )}
 
-        <Button type="submit" size="lg" disabled={submitting} className="w-full">
-          {submitting ? "Booking…" : "Confirm booking"}
+        <Button
+          type="submit"
+          size="lg"
+          disabled={submitting || soldOut || isChecking}
+          className="w-full"
+        >
+          {submitting
+            ? "Booking…"
+            : soldOut
+              ? "Fully booked for these dates"
+              : "Confirm booking"}
         </Button>
       </form>
     </Modal>
@@ -320,6 +400,7 @@ export default function RoomsPage() {
   }, []);
 
   const groups = useMemo(() => groupByCategory(rooms), [rooms]);
+  const isSlowLoad = useSlowLoad(loading);
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
@@ -335,13 +416,19 @@ export default function RoomsPage() {
       </div>
 
       {loading && (
-        <div className="flex justify-center py-24">
+        <div className="flex flex-col items-center gap-3 py-24">
           <Loader className="w-8 h-8 text-forest dark:text-moss" />
+          {isSlowLoad && (
+            <p className="max-w-sm text-center text-sm text-ink-soft dark:text-parchment/60 animate-fade-in">
+              Waking up our booking service — this can take up to a minute on the
+              first visit of the day. Thanks for your patience.
+            </p>
+          )}
         </div>
       )}
 
       {error && !loading && (
-        <p className="text-center text-clay">{error} — is the backend running on port 5000?</p>
+        <p className="text-center text-clay">{error} — please try again in a moment.</p>
       )}
 
       {!loading && !error && groups.length === 0 && (
@@ -359,7 +446,10 @@ export default function RoomsPage() {
         </div>
       )}
 
+      {/* Keyed by category so opening a different room type remounts the form
+          with fresh state, rather than clearing six fields in an effect. */}
       <CategoryBookingModal
+        key={activeGroup?.category ?? "none"}
         group={activeGroup}
         isOpen={activeGroup !== null}
         onClose={() => setActiveGroup(null)}

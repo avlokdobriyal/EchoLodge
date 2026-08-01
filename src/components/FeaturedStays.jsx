@@ -2,14 +2,9 @@
 import { useState, useEffect } from "react";
 import Card from "./Card";
 import { API_BASE } from "@/lib/api";
+import { metaFor } from "@/lib/categories";
 
 const API = `${API_BASE}/api/rooms`;
-
-const CATEGORY_TAGS = {
-  "Ganga View Balcony": "River view",
-  "Standard Balcony": "Best value",
-  "Super Deluxe Ganga View Suite": "Signature",
-};
 
 // Hoisted: built once per module rather than once per call.
 const INR = new Intl.NumberFormat("en-IN", {
@@ -94,12 +89,16 @@ export default function FeaturedStays() {
 
   return (
     <div className="mt-10 grid grid-cols-1 md:grid-cols-3 gap-8">
-      {groups.map((group, index) => (
+      {groups.map((group, index) => {
+        const meta = metaFor(group.category);
+        return (
         <div key={group.category} className={`animate-fade-in-up ${index < 3 ? `delay-${(index + 1) * 100}` : ""}`}>
           <Card
             title={group.category}
             desc={group.description}
-            tag={CATEGORY_TAGS[group.category] ?? `${group.count} rooms`}
+            image={meta.image}
+            priority={index === 0}
+            tag={meta.tag ?? `${group.count} rooms`}
           />
           <p className="mt-3 px-2 text-sm text-ink-soft dark:text-parchment/60">
             From{" "}
@@ -109,7 +108,8 @@ export default function FeaturedStays() {
             /night · {group.count} room{group.count > 1 ? "s" : ""}
           </p>
         </div>
-      ))}
+        );
+      })}
     </div>
   );
 }

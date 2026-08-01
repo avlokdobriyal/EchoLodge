@@ -1,21 +1,26 @@
+import Image from "next/image";
+
 /**
  * @param {Object} props
  * @param {string} props.title - Card heading
  * @param {string} props.desc - Description text
  * @param {string} [props.tag] - Optional pill tag
- * @param {string} [props.image] - Optional image URL (renders a media header)
+ * @param {string} [props.image] - Optional image path under /public (renders a media header)
+ * @param {boolean} [props.priority] - Skip lazy-loading (for above-the-fold cards)
  * @param {number} [props.rating] - Optional rating out of 5
  */
-export default function Card({ title, desc, tag, image, rating }) {
+export default function Card({ title, desc, tag, image, priority = false, rating }) {
     return (
         <div className="group overflow-hidden rounded-3xl bg-surface dark:bg-bark-soft border border-sand dark:border-bark-soft shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
             {image && (
                 <div className="relative h-48 overflow-hidden">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
+                    <Image
                         src={image}
                         alt={title}
-                        className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                        fill
+                        sizes="(max-width: 768px) 100vw, 33vw"
+                        priority={priority}
+                        className="object-cover transition-transform duration-500 group-hover:scale-105"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-bark/30 to-transparent" />
                 </div>

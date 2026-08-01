@@ -23,6 +23,60 @@ router.get('/', async (req, res, next) => {
   }
 });
 
+// --- GET /api/rooms/availability — public --------------------------------
+// How many rooms in a category are actually free for a date range, so the
+// booking UI can show availability up front instead of letting a guest fill in
+// the whole form and then rejecting it with a 409.
+// (Registered before /:id-style routes; rooms has none, but keep it above POST
+// for readability.)
+const availabilityQuerySchema = z.object({
+  category: z.string().trim().min(1, 'category is required'),
+  checkIn: z.coerce.date({ invalid_type_error: 'checkIn must be a valid date' }),
+  checkOut: z.coerce.date({ invalid_type_error: 'checkOut must be a valid date' }),
+});
+
+router.get('/availability', async (req, res, next) => {
+  const parsed = availabilityQuerySchema.safeParse(req.query);
+  if (!parsed.success) {
+    return res.status(400).json({ error: 'Invalid input', details: parsed.error.flatten().fieldErrors });
+  }
+  const { category, checkIn, checkOut } = parsed.data;
+
+  if (checkOut <= checkIn) {
+    return res.status(400).json({ error: 'checkOut must be after checkIn' });
+  }
+
+  try {
+    const rooms = await prisma.room.findMany({
+      where: { category },
+      select: { id: true },
+    });
+    if (rooms.length === 0) {
+      return res.status(404).json({ error: 'No rooms found in this category' });
+    }
+
+    // Same overlap rule the booking routes enforce: start < otherEnd && end > otherStart.
+    const conflicts = await prisma.booking.findMany({
+      where: {
+        roomId: { in: rooms.map((r) => r.id) },
+        status: { not: 'CANCELLED' },
+        checkInDate: { lt: checkOut },
+        checkOutDate: { gt: checkIn },
+      },
+      select: { roomId: true },
+    });
+
+    const taken = new Set(conflicts.map((c) => c.roomId)).size;
+    res.status(200).json({
+      category,
+      inventory: rooms.length,
+      available: rooms.length - taken,
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
 // --- POST /api/rooms — admin only ----------------------------------------
 router.post('/', requireAuth, requireAdmin, async (req, res, next) => {
   const parsed = roomSchema.safeParse(req.body);

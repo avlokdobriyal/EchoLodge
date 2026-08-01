@@ -20,6 +20,46 @@ function nightsBetween(checkIn, checkOut) {
   return Math.ceil((checkOut.getTime() - checkIn.getTime()) / MS_PER_DAY);
 }
 
+// Midnight UTC today. The lodge is in IST (UTC+5:30), which is ahead of UTC, so
+// anchoring to UTC midnight errs on the permissive side: a guest booking "today"
+// in local time is never rejected for being in the past.
+function startOfTodayUTC() {
+  const now = new Date();
+  return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+}
+
+// Shared date-range rules for both booking routes. Returns an error string, or
+// null when the range is bookable.
+function validateStayDates(checkIn, checkOut) {
+  if (checkOut <= checkIn) return 'checkOut must be after checkIn';
+  if (checkIn < startOfTodayUTC()) return 'checkIn cannot be in the past';
+  return null;
+}
+
+// Rooms in `roomIds` with an active booking overlapping [checkIn, checkOut).
+// Two ranges overlap iff start < otherEnd && end > otherStart.
+async function findTakenRoomIds(tx, roomIds, checkIn, checkOut) {
+  const conflicts = await tx.booking.findMany({
+    where: {
+      roomId: { in: roomIds },
+      status: { not: 'CANCELLED' },
+      checkInDate: { lt: checkOut },
+      checkOutDate: { gt: checkIn },
+    },
+    select: { roomId: true },
+  });
+  return new Set(conflicts.map((c) => c.roomId));
+}
+
+// Postgres raises 40001 (serialization failure) when two concurrent
+// Serializable transactions would produce an impossible ordering — exactly the
+// double-booking case we're guarding against.
+function isSerializationFailure(err) {
+  return err?.code === 'P2034' || err?.meta?.code === '40001';
+}
+
+const BOOKING_TX_OPTIONS = { isolationLevel: 'Serializable' };
+
 // --- POST /api/bookings — authenticated -----------------------------------
 router.post('/', requireAuth, async (req, res, next) => {
   const parsed = bookingSchema.safeParse(req.body);
@@ -28,46 +68,52 @@ router.post('/', requireAuth, async (req, res, next) => {
   }
   const { roomId, checkIn, checkOut } = parsed.data;
 
-  if (checkOut <= checkIn) {
-    return res.status(400).json({ error: 'checkOut must be after checkIn' });
+  const dateError = validateStayDates(checkIn, checkOut);
+  if (dateError) {
+    return res.status(400).json({ error: dateError });
   }
 
+  const nights = nightsBetween(checkIn, checkOut);
+
   try {
-    const room = await prisma.room.findUnique({ where: { id: roomId } });
-    if (!room) {
-      return res.status(404).json({ error: 'Room not found' });
-    }
+    // The availability check and the insert must be atomic — otherwise two
+    // requests can both read "free" before either writes, and the room is
+    // double-booked. Serializable makes Postgres reject the loser.
+    const booking = await prisma.$transaction(async (tx) => {
+      const room = await tx.room.findUnique({ where: { id: roomId } });
+      if (!room) {
+        throw Object.assign(new Error('Room not found'), { status: 404 });
+      }
 
-    // Overlap: an active booking on this room whose range intersects the
-    // requested range. Two ranges overlap iff start < otherEnd && end > otherStart.
-    const conflict = await prisma.booking.findFirst({
-      where: {
-        roomId,
-        status: { not: 'CANCELLED' },
-        checkInDate: { lt: checkOut },
-        checkOutDate: { gt: checkIn },
-      },
-    });
-    if (conflict) {
-      return res.status(409).json({ error: 'Room is already booked for the selected dates' });
-    }
+      const taken = await findTakenRoomIds(tx, [roomId], checkIn, checkOut);
+      if (taken.has(roomId)) {
+        throw Object.assign(new Error('Room is already booked for the selected dates'), {
+          status: 409,
+        });
+      }
 
-    const nights = nightsBetween(checkIn, checkOut);
-    const totalPrice = nights * room.pricePerNight;
-
-    const booking = await prisma.booking.create({
-      data: {
-        userId: Number(req.user.id),
-        roomId,
-        checkInDate: checkIn,
-        checkOutDate: checkOut,
-        totalPrice,
-      },
-      include: { room: { select: { name: true, category: true } } },
-    });
+      return tx.booking.create({
+        data: {
+          userId: Number(req.user.id),
+          roomId,
+          checkInDate: checkIn,
+          checkOutDate: checkOut,
+          totalPrice: nights * room.pricePerNight,
+        },
+        include: { room: { select: { name: true, category: true } } },
+      });
+    }, BOOKING_TX_OPTIONS);
 
     res.status(201).json({ ...booking, nights });
   } catch (err) {
+    if (err.status) {
+      return res.status(err.status).json({ error: err.message });
+    }
+    if (isSerializationFailure(err)) {
+      return res.status(409).json({
+        error: 'That room was just taken for these dates. Please try again.',
+      });
+    }
     next(err);
   }
 });
@@ -90,66 +136,73 @@ router.post('/category', requireAuth, async (req, res, next) => {
   }
   const { category, quantity, checkIn, checkOut } = parsed.data;
 
-  if (checkOut <= checkIn) {
-    return res.status(400).json({ error: 'checkOut must be after checkIn' });
+  const dateError = validateStayDates(checkIn, checkOut);
+  if (dateError) {
+    return res.status(400).json({ error: dateError });
   }
 
+  const nights = nightsBetween(checkIn, checkOut);
+
   try {
-    const rooms = await prisma.room.findMany({
-      where: { category },
-      orderBy: { id: 'asc' },
-    });
-    if (rooms.length === 0) {
-      return res.status(404).json({ error: 'No rooms found in this category' });
-    }
-    if (quantity > rooms.length) {
-      return res.status(400).json({
-        error: `Only ${rooms.length} room(s) exist in this category`,
-        inventory: rooms.length,
+    // Availability check and all N inserts share one Serializable transaction,
+    // so the category can't be oversold by concurrent requests.
+    const bookings = await prisma.$transaction(async (tx) => {
+      const rooms = await tx.room.findMany({
+        where: { category },
+        orderBy: { id: 'asc' },
       });
-    }
+      if (rooms.length === 0) {
+        throw Object.assign(new Error('No rooms found in this category'), { status: 404 });
+      }
+      if (quantity > rooms.length) {
+        throw Object.assign(
+          new Error(`Only ${rooms.length} room(s) exist in this category`),
+          { status: 400, extra: { inventory: rooms.length } }
+        );
+      }
 
-    // Rooms with an active booking overlapping the requested range are taken.
-    const conflicts = await prisma.booking.findMany({
-      where: {
-        roomId: { in: rooms.map((r) => r.id) },
-        status: { not: 'CANCELLED' },
-        checkInDate: { lt: checkOut },
-        checkOutDate: { gt: checkIn },
-      },
-      select: { roomId: true },
-    });
-    const taken = new Set(conflicts.map((c) => c.roomId));
-    const free = rooms.filter((r) => !taken.has(r.id));
+      const taken = await findTakenRoomIds(tx, rooms.map((r) => r.id), checkIn, checkOut);
+      const free = rooms.filter((r) => !taken.has(r.id));
 
-    if (free.length < quantity) {
-      return res.status(409).json({
-        error: `Only ${free.length} room(s) of this category are available for the selected dates`,
-        available: free.length,
-      });
-    }
+      if (free.length < quantity) {
+        throw Object.assign(
+          new Error(
+            `Only ${free.length} room(s) of this category are available for the selected dates`
+          ),
+          { status: 409, extra: { available: free.length } }
+        );
+      }
 
-    const nights = nightsBetween(checkIn, checkOut);
-    const picked = free.slice(0, quantity);
-
-    const bookings = await prisma.$transaction(
-      picked.map((room) =>
-        prisma.booking.create({
-          data: {
-            userId: Number(req.user.id),
-            roomId: room.id,
-            checkInDate: checkIn,
-            checkOutDate: checkOut,
-            totalPrice: nights * room.pricePerNight,
-          },
-          include: { room: { select: { name: true, category: true } } },
-        })
-      )
-    );
+      const picked = free.slice(0, quantity);
+      const created = [];
+      for (const room of picked) {
+        created.push(
+          await tx.booking.create({
+            data: {
+              userId: Number(req.user.id),
+              roomId: room.id,
+              checkInDate: checkIn,
+              checkOutDate: checkOut,
+              totalPrice: nights * room.pricePerNight,
+            },
+            include: { room: { select: { name: true, category: true } } },
+          })
+        );
+      }
+      return created;
+    }, BOOKING_TX_OPTIONS);
 
     const totalPrice = bookings.reduce((sum, b) => sum + b.totalPrice, 0);
     res.status(201).json({ bookings, nights, quantity, totalPrice });
   } catch (err) {
+    if (err.status) {
+      return res.status(err.status).json({ error: err.message, ...(err.extra ?? {}) });
+    }
+    if (isSerializationFailure(err)) {
+      return res.status(409).json({
+        error: 'Those rooms were just taken for these dates. Please try again.',
+      });
+    }
     next(err);
   }
 });

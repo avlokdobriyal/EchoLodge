@@ -11,7 +11,7 @@ export default function Footer() {
                             Echo<span className="text-clay">Lodge</span>
                         </span>
                         <p className="mt-3 text-sm text-ink-soft dark:text-parchment/60 max-w-xs leading-relaxed">
-                            Community eco-tourism and boutique homestays in Laxman Jhula, Rishikesh. Book direct, stay warm.
+                            A small riverside lodge in Laxman Jhula, Rishikesh. Book direct, stay warm.
                         </p>
                     </div>
                     <div>

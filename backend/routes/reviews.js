@@ -13,10 +13,14 @@ const createReviewSchema = z.object({
   roomType: z.string().trim().min(1, 'Room type is required'),
   reviewText: z.string().trim().min(1, 'Review text is required').max(4000),
   rating: z.coerce.number().int().min(1).max(5),
+  // Optional: the stay being reviewed. When supplied and it genuinely belongs
+  // to the caller, the review is stamped as a verified stay.
+  bookingId: z.coerce.number().int().positive().optional(),
 });
 
-// Updates touch the guest-entered fields only; AI metadata stays AI-owned.
-const updateReviewSchema = createReviewSchema;
+// Updates touch the guest-entered fields only; AI metadata and the verified-stay
+// link stay owned by the server.
+const updateReviewSchema = createReviewSchema.omit({ bookingId: true });
 
 const replySchema = z.object({
   reply: z.string().trim().min(1, 'Reply text is required').max(4000),
@@ -31,14 +35,35 @@ function canModify(review, user) {
 
 // The shape non-admin callers see: internal AI fields (aiTags, suggestedReply)
 // are stripped; the published adminReply, repliedAt and sentiment remain visible.
+// `verifiedStay` is surfaced as a plain boolean so the client never has to know
+// about booking ids.
 function toPublic(review) {
-  const { aiTags, suggestedReply, ...publicFields } = review;
-  return publicFields;
+  const { aiTags, suggestedReply, bookingId, ...publicFields } = review;
+  return { ...publicFields, verifiedStay: bookingId != null };
+}
+
+// Resolves the booking a new review should be attached to. Returns the booking
+// id when the caller genuinely owns a matching stay, otherwise null (the review
+// still saves — it just renders as unverified). Guests who booked through the
+// front desk rather than the site are not punished for it.
+async function resolveVerifiedBooking(bookingId, userId) {
+  if (!bookingId) return null;
+  const booking = await prisma.booking.findUnique({
+    where: { id: bookingId },
+    include: { room: { select: { category: true } }, review: { select: { id: true } } },
+  });
+  // Must exist, belong to the caller, not be cancelled, and not already be
+  // reviewed (the DB unique index enforces the last one too, but a clean 400
+  // beats a constraint violation).
+  if (!booking || booking.userId !== Number(userId)) return null;
+  if (booking.status === 'CANCELLED') return null;
+  if (booking.review) return null;
+  return booking.id;
 }
 
 // --- GET /api/reviews/search — public ------------------------------------
 router.get('/search', async (req, res, next) => {
-  const { q } = req.query;
+  const q = typeof req.query.q === 'string' ? req.query.q.trim() : '';
   if (!q) {
     return res.status(400).json({ error: 'Search query "q" is required' });
   }
@@ -48,9 +73,12 @@ router.get('/search', async (req, res, next) => {
         OR: [
           { reviewText: { contains: q, mode: 'insensitive' } },
           { sentiment: { contains: q, mode: 'insensitive' } },
+          { guestName: { contains: q, mode: 'insensitive' } },
+          { roomType: { contains: q, mode: 'insensitive' } },
         ],
       },
-      orderBy: { id: 'asc' },
+      // Newest first, matching the other listing endpoints.
+      orderBy: { createdAt: 'desc' },
     });
     res.status(200).json(filteredReviews.map(toPublic));
   } catch (err) {
@@ -63,7 +91,11 @@ router.get('/search', async (req, res, next) => {
 router.get('/admin/all', requireAuth, requireAdmin, async (req, res, next) => {
   try {
     const reviews = await prisma.review.findMany({ orderBy: { createdAt: 'desc' } });
-    res.status(200).json(reviews);
+    // Admins keep the internal AI fields, but get the same verifiedStay flag the
+    // public payload exposes so the dashboard doesn't have to derive it.
+    res.status(200).json(
+      reviews.map((r) => ({ ...r, verifiedStay: r.bookingId != null }))
+    );
   } catch (err) {
     next(err);
   }
@@ -116,9 +148,12 @@ router.post('/', requireAuth, async (req, res, next) => {
   if (!parsed.success) {
     return res.status(400).json({ error: 'Invalid input', details: parsed.error.flatten().fieldErrors });
   }
-  const { guestName, roomType, reviewText, rating } = parsed.data;
+  const { guestName, roomType, reviewText, rating, bookingId } = parsed.data;
 
   try {
+    // Only stays the caller actually owns can verify a review.
+    const verifiedBookingId = await resolveVerifiedBooking(bookingId, req.user.id);
+
     // Intercept: run the review through Gemini first. On any AI failure this
     // returns null and the review is saved with empty AI fields — a guest's
     // submission is never lost to an upstream outage.
@@ -131,6 +166,7 @@ router.post('/', requireAuth, async (req, res, next) => {
         reviewText,
         rating,
         authorId: req.user.id,
+        bookingId: verifiedBookingId,
         sentiment: ai?.sentiment ?? null,
         aiTags: ai?.aiTags ?? [],
         suggestedReply: ai?.suggestedReply ?? null,

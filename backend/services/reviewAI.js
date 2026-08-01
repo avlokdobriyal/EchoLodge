@@ -4,7 +4,12 @@ const { z } = require('zod');
 // Same model strategy as routes/ai.js: a stable alias that tracks the current
 // flash tier, overridable via env.
 const MODEL = process.env.GEMINI_MODEL || 'gemini-flash-latest';
-const REQUEST_TIMEOUT_MS = 20_000;
+// This call sits in the critical path of POST /api/reviews, so the guest waits
+// on it. A flash-tier analysis of a few hundred words normally lands in 2-4s;
+// 12s is generous headroom while capping how bad a slow upstream can make the
+// submit feel. On timeout analyzeReview returns null, the review still saves,
+// and an admin can re-run it from the dashboard.
+const REQUEST_TIMEOUT_MS = 12_000;
 
 let client = null;
 function getClient() {

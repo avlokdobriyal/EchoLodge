@@ -1,22 +1,24 @@
 const values = [
     {
         title: "Community first",
-        desc: "Hosts are neighbours, not listings. Every booking keeps income within Laxman Jhula.",
+        desc: "We hire from Laxman Jhula and buy from the market down the road. The lodge belongs to this valley.",
     },
     {
         title: "Lightest footprint",
-        desc: "Solar hot water, local sourcing, and zero single-use plastic across our stays.",
+        desc: "Solar hot water, local sourcing, and zero single-use plastic anywhere on the property.",
     },
     {
         title: "Honest pricing",
-        desc: "Zero commission means the price you see is the price the host actually earns.",
+        desc: "Booking direct means no travel-site commission — the price you see is the price we set.",
     },
 ];
 
+// Figures describe this one property. Room counts come from the same inventory
+// the booking page reads, so they stay true if the catalogue changes.
 const stats = [
+    { value: "12", label: "Rooms" },
+    { value: "3", label: "Room types" },
     { value: "0%", label: "Commission" },
-    { value: "12+", label: "Local hosts" },
-    { value: "4.7", label: "Avg. rating" },
 ];
 
 export default function AboutPage() {
@@ -25,12 +27,14 @@ export default function AboutPage() {
             <div className="text-center">
                 <p className="text-sm font-medium uppercase tracking-wider text-clay">Our story</p>
                 <h1 className="mt-2 font-display text-4xl md:text-6xl font-semibold text-ink dark:text-parchment">
-                    Eco-tourism, done directly
+                    One lodge, booked directly
                 </h1>
                 <p className="mt-6 text-lg text-ink-soft dark:text-parchment/70 leading-relaxed">
-                    We are dedicated to community eco-tourism and beautiful homestays right in the heart of
-                    Laxman Jhula, Rishikesh. EchoLodge connects travellers with local hosts directly — no
-                    middlemen, no commission — so more of your stay supports the people and the valley you came to see.
+                    EchoLodge is a twelve-room lodge in the heart of Laxman Jhula, Rishikesh, a few
+                    minutes&rsquo; walk from the Ganga. For years most of our guests reached us through
+                    travel sites that took a sizeable cut of every night booked. So we built our own
+                    booking site. Reserve here and that cut simply doesn&rsquo;t exist — which is how we
+                    keep the rates fair and the terrace chai free.
                 </p>
             </div>
 
@@ -53,9 +57,9 @@ export default function AboutPage() {
             </div>
 
             <div className="mt-16 rounded-3xl bg-forest text-parchment p-10 text-center">
-                <h2 className="font-display text-2xl md:text-3xl font-semibold">Join us in embracing nature</h2>
+                <h2 className="font-display text-2xl md:text-3xl font-semibold">Come stay by the river</h2>
                 <p className="mt-3 text-parchment/80 max-w-xl mx-auto">
-                    Whether you come for the river, the trails, or the quiet — there is a homestay here for you.
+                    Whether you come for the river, the trails, or the quiet — there is a room here for you.
                 </p>
             </div>
         </div>

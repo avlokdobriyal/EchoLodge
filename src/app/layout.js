@@ -24,8 +24,9 @@ const fraunces = Fraunces({
 });
 
 export const metadata = {
-  title: "EchoLodge",
-  description: "Zero-commission booking engine for eco-friendly homestays",
+  title: "EchoLodge — riverside rooms in Rishikesh, booked direct",
+  description:
+    "A small riverside lodge in Laxman Jhula, Rishikesh. Twelve rooms across three categories, bookable directly with us — no booking-site commission in the middle.",
 };
 
 export const viewport = {

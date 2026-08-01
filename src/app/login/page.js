@@ -36,16 +36,16 @@ export default function LoginPage() {
             return;
         }
         notify("Welcome back!", "success");
-        router.push("/reviews");
+        router.push("/rooms");
     };
 
     return (
         <div className="max-w-md mx-auto px-4 py-24">
             <div className="text-center mb-8">
-                <p className="text-sm font-medium uppercase tracking-wider text-clay">Staff portal</p>
+                <p className="text-sm font-medium uppercase tracking-wider text-clay">Guest sign-in</p>
                 <h1 className="mt-2 font-display text-4xl font-semibold text-ink dark:text-parchment">Welcome back</h1>
                 <p className="mt-3 text-ink-soft dark:text-parchment/70">
-                    Authenticate to manage bookings and reviews.
+                    Sign in to book a room, see your stays, and write a review.
                 </p>
             </div>
 
@@ -57,7 +57,7 @@ export default function LoginPage() {
                 <Input
                     label="Email"
                     type="email"
-                    placeholder="host@echolodge.in"
+                    placeholder="you@example.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     error={errors.email}
@@ -82,7 +82,7 @@ export default function LoginPage() {
 
                 <button
                     type="button"
-                    onClick={() => signIn("google", { callbackUrl: "/reviews" })}
+                    onClick={() => signIn("google", { callbackUrl: "/rooms" })}
                     className="w-full inline-flex justify-center items-center gap-3 px-5 py-3 rounded-full border border-sand dark:border-bark-soft bg-surface dark:bg-bark text-ink dark:text-parchment font-medium hover:bg-sand/50 dark:hover:bg-bark-soft transition-colors focus:outline-none focus:ring-2 focus:ring-forest/40"
                 >
                     <svg className="w-5 h-5" viewBox="0 0 24 24" aria-hidden="true">
