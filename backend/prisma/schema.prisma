@@ -33,6 +33,14 @@ model Review {
   authorId    Int?
   author      User?    @relation(fields: [authorId], references: [id])
 
+  // The stay this review is about. Nullable because a guest may review without
+  // a matching booking on file (and legacy rows predate this column) — those
+  // simply render as unverified. @unique enforces at most one review per stay.
+  // SetNull so deleting a booking downgrades the review instead of destroying
+  // the guest's words.
+  bookingId   Int?     @unique
+  booking     Booking? @relation(fields: [bookingId], references: [id], onDelete: SetNull)
+
   // --- AI-generated metadata (populated by Gemini on submission; all nullable
   // so a review still saves when the AI call fails) ------------------------
   sentiment      String? // POSITIVE | NEUTRAL | NEGATIVE
@@ -64,6 +72,7 @@ model Booking {
   totalPrice   Float
   status       String   @default("CONFIRMED")
   createdAt    DateTime @default(now())
+  review       Review?
 
   @@index([roomId])
   @@index([userId])

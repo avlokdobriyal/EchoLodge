@@ -22,6 +22,23 @@ export function SentimentBadge({ sentiment }) {
   );
 }
 
+// Shown when a review is linked to a booking the author actually holds, which
+// the backend resolves server-side — the client can never set it.
+export function VerifiedStayBadge({ verified }) {
+  if (!verified) return null;
+  return (
+    <span
+      className="shrink-0 inline-flex items-center gap-1 px-2.5 py-1 text-xs rounded-full font-semibold bg-forest/10 text-forest dark:bg-moss/20 dark:text-moss"
+      title="This guest booked and stayed with us"
+    >
+      <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+      </svg>
+      Verified stay
+    </span>
+  );
+}
+
 export function RatingStars({ rating }) {
   if (!rating) return null;
   return (

@@ -4,7 +4,7 @@ import { useSession } from "next-auth/react";
 import { Button, Loader, notify } from "@/components/ui/index.js";
 import RequireAdmin from "@/components/RequireAdmin";
 import AdminTabs from "@/components/AdminTabs";
-import { SentimentBadge, RatingStars } from "@/components/ReviewMeta";
+import { SentimentBadge, RatingStars, VerifiedStayBadge } from "@/components/ReviewMeta";
 import EmptyState from "@/components/EmptyState";
 import { API_BASE } from "@/lib/api";
 
@@ -89,6 +89,7 @@ function ReviewCard({ review, token, onPublished }) {
           <div className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-1">
             <span className="text-sm text-clay font-medium">{review.roomType}</span>
             <RatingStars rating={review.rating} />
+            <VerifiedStayBadge verified={review.verifiedStay} />
             {formatDate(review.createdAt) && (
               <span className="text-xs text-ink-soft/80 dark:text-parchment/50">
                 {formatDate(review.createdAt)}
