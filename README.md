@@ -5,25 +5,73 @@ Laxman Jhula, Rishikesh. One property, not a marketplace: guests browse the
 three room categories, check real availability, book directly, and review their
 stay afterwards. Booking here means no travel-site commission in the middle.
 
-## 🌐 Live Deployment
+## 🌐 Deployment
 
-| | URL |
+The application is fully deployed and publicly accessible.
+
+### Live URLs
+
+| Service | URL |
 |---|---|
-| **Frontend (Vercel)** | https://echolodge.vercel.app |
-| **Backend (Render)** | https://echolodge-00cc.onrender.com |
-
-> **Free-tier note:** Render spins a free service down after ~15 minutes of
-> inactivity, and the next request pays a 30–60s cold start. The server now
-> keeps itself warm by pinging its own health check every 12 minutes (see
-> `Keep-alive` in `backend/server.js`), so this should only be visible right
-> after a deploy. The rooms page explains the wait if it does happen.
+| **Live Frontend** (Vercel) | **https://echolodge.vercel.app** |
+| **Live Backend / API** (Render) | **https://echolodge-00cc.onrender.com** |
+| Backend health check | https://echolodge-00cc.onrender.com/api/health |
 
 ### Tech Stack
 
-- **Frontend:** Next.js 16 (App Router) · React 19 · Tailwind CSS v4 · NextAuth (Credentials + Google OAuth) — deployed on **Vercel**
-- **Backend:** Node.js · Express 5 · Zod validation · JWT auth · express-rate-limit — deployed on **Render**
-- **Database:** PostgreSQL on **Supabase** (transaction pooler) via **Prisma ORM**
-- **AI:** Google Gemini (`gemini-flash-latest`) — review sentiment analysis, drafted admin replies, and the trip-planning AI Concierge
+| Layer | Technology | Hosted on |
+|---|---|---|
+| **Frontend** | Next.js 16 (App Router) · React 19 · Tailwind CSS v4 · NextAuth (Credentials + Google OAuth) | **Vercel** |
+| **Backend** | Node.js · Express 5 · Zod validation · JWT auth · express-rate-limit | **Render** |
+| **Database** | PostgreSQL via **Prisma ORM**, accessed through the transaction pooler | **Supabase** |
+| **AI** | Google Gemini (`gemini-flash-latest`) — review sentiment analysis, drafted admin replies, and the trip-planning Concierge | Google AI Studio |
+
+See [Architecture](#architecture) for how these fit together.
+
+### Known Limitations on the Free Tier
+
+Every service in this stack runs on a free plan. These are the constraints that
+are actually visible in production, and what has been done about each.
+
+**1. Render spins the backend down after ~15 minutes of inactivity.**
+The next request then has to start the service from cold, which takes roughly
+**30–60 seconds** — measured at 22s on this project. Because the homepage and
+rooms page fetch live inventory on load, that delay is the first thing a visitor
+would see.
+
+*Mitigation:* the server keeps itself awake by pinging its own health check
+every 12 minutes, using the `RENDER_EXTERNAL_URL` that Render injects (see
+*Keep-alive* in `backend/server.js`). This runs inside the process, so it
+narrows the window rather than closing it — a cold start is still possible
+immediately after a deploy, before the first ping cycle. When it happens, the
+rooms page explains the wait after 4 seconds instead of showing a spinner that
+looks broken.
+
+**2. Supabase pauses free projects after extended inactivity.**
+Note that the keep-alive above does *not* prevent this: `/api/health`
+deliberately avoids touching the database so it can report that the service is
+up even when the database is not. Keeping the API warm therefore does not keep
+Postgres warm. If the project has been idle for a long stretch, it may need to
+be resumed from the Supabase dashboard before the site works.
+
+**3. Free-tier compute is limited and single-instance.**
+The API runs as one small shared-CPU instance with no horizontal scaling, so
+throughput is modest. This is partly why booking writes use a Serializable
+transaction and return a retryable `409` on conflict rather than relying on
+application-level locking.
+
+**4. Gemini's free tier is rate-limited.**
+Under heavy use, review analysis can fail. This is handled rather than
+surfaced: `analyzeReview` returns `null` on any failure, the review still saves
+with empty AI fields, and an admin can re-run the analysis from the dashboard.
+A guest's submission is never lost to an upstream outage.
+
+**5. Vercel's Hobby plan is for non-commercial use.**
+Taking real bookings for the lodge would require a paid plan.
+
+**6. No payment processing.**
+A booking is a reservation, not a paid transaction — there is no payment
+gateway integrated. Guests settle at the property.
 
 ## Features
 
@@ -91,6 +139,32 @@ structured and genuinely related — a review points at the booking that justifi
 it, and a booking points at both the room and the guest. Supabase's managed
 Postgres also provides a transaction pooler, which keeps connections stable for
 an API made of many short-lived requests.
+
+### Schema
+
+[![EchoLodge database schema](./EchoLodge_DatabaseSchema.png)](./EchoLodge_DatabaseSchema.png)
+
+*Click the diagram to view it full size. Source of truth is
+[`backend/prisma/schema.prisma`](./backend/prisma/schema.prisma).*
+
+Four tables, and the relationships are what carry the business rules:
+
+- **User → Booking** — a guest holds many stays. `password` is nullable, because
+  Google OAuth users never have one locally.
+- **Room → Booking** — each booking reserves one specific room. Rooms are sold
+  by `category`, so the API picks free rooms within a category and books them
+  atomically.
+- **User → Review** — `authorId` records who wrote a review, so only the author
+  or an admin can edit it.
+- **Booking → Review** — `bookingId` is what makes a review a **verified stay**.
+  It is unique, so one stay backs at most one review, and `ON DELETE SET NULL`
+  means deleting a booking downgrades the review to unverified rather than
+  destroying the guest's words. It stays nullable so guests who booked at the
+  front desk can still review.
+
+`sentiment`, `aiTags` and `suggestedReply` on **Review** are written by the
+Gemini pipeline, and are all nullable so a review still saves when the AI call
+fails.
 
 Point the project at your own database in three steps:
 
