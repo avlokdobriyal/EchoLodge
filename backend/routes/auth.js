@@ -1,7 +1,7 @@
 const express = require('express');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
-const rateLimit = require('express-rate-limit');
+const { rateLimit, ipKeyGenerator } = require('express-rate-limit');
 const { z } = require('zod');
 const prisma = require('../lib/prisma');
 
@@ -12,15 +12,52 @@ const SALT_ROUNDS = 12;
 // token dies mid-session and every authorized call starts silently 401ing.
 const JWT_EXPIRES_IN = '30d';
 
-// Limit auth attempts: 5 per 15 minutes per IP. Applied to this router only.
-const authLimiter = rateLimit({
+// --- Rate limiting --------------------------------------------------------
+// IMPORTANT: /login is not called by the browser. NextAuth's authorize() runs
+// on the Vercel server, so every credential login in production arrives from
+// the same handful of Vercel egress IPs. An IP-keyed limiter here is really a
+// single global bucket — five guests signing in would lock out everyone else.
+// So brute-force protection is keyed by the account being targeted instead,
+// which is what we actually want to protect. /register and /oauth are keyed by
+// IP (register is called browser-direct, so the IP is the real client's).
+function emailKey(req) {
+  const email = typeof req.body?.email === 'string' ? req.body.email.trim().toLowerCase() : '';
+  // Fall back to the IP for malformed bodies so the limiter is never keyless.
+  return email || ipKeyGenerator(req.ip);
+}
+
+// Per-account brute-force guard: 10 failed sign-ins per account per 15 minutes.
+// Successful logins are not counted, so a legitimate guest is never locked out
+// by their own activity.
+const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 5,
+  limit: 10,
   standardHeaders: true,
   legacyHeaders: false,
-  message: { error: 'Too many attempts. Please try again in 15 minutes.' },
+  keyGenerator: emailKey,
+  skipSuccessfulRequests: true,
+  message: { error: 'Too many sign-in attempts for this account. Please try again in 15 minutes.' },
 });
-router.use(authLimiter);
+
+// Signup abuse guard: 10 new accounts per IP per hour.
+const registerLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  limit: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many accounts created from this network. Please try again later.' },
+});
+
+// The OAuth bridge only runs after Google has already authenticated the user,
+// so this is a runaway-loop backstop rather than a security control.
+const oauthLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 30,
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: emailKey,
+  message: { error: 'Too many sign-in attempts. Please try again shortly.' },
+});
 
 // --- Validation schemas --------------------------------------------------
 const registerSchema = z.object({
@@ -59,7 +96,7 @@ function safeUser(user) {
 }
 
 // --- POST /api/auth/register --------------------------------------------
-router.post('/register', async (req, res, next) => {
+router.post('/register', registerLimiter, async (req, res, next) => {
   const parsed = registerSchema.safeParse(req.body);
   if (!parsed.success) {
     return res.status(400).json({ error: 'Invalid input', details: parsed.error.flatten().fieldErrors });
@@ -85,7 +122,7 @@ router.post('/register', async (req, res, next) => {
 });
 
 // --- POST /api/auth/login ------------------------------------------------
-router.post('/login', async (req, res, next) => {
+router.post('/login', loginLimiter, async (req, res, next) => {
   const parsed = loginSchema.safeParse(req.body);
   if (!parsed.success) {
     return res.status(400).json({ error: 'Invalid input', details: parsed.error.flatten().fieldErrors });
@@ -114,7 +151,7 @@ router.post('/login', async (req, res, next) => {
 // --- POST /api/auth/oauth ------------------------------------------------
 // Bridge for NextAuth OAuth (Google) sign-ins: upsert a passwordless user and
 // mint a backend JWT so OAuth users can reach the protected review routes.
-router.post('/oauth', async (req, res, next) => {
+router.post('/oauth', oauthLimiter, async (req, res, next) => {
   const parsed = oauthSchema.safeParse(req.body);
   if (!parsed.success) {
     return res.status(400).json({ error: 'Invalid input', details: parsed.error.flatten().fieldErrors });

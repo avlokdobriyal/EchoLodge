@@ -13,6 +13,12 @@ const app = express();
 // Render injects PORT at runtime; 5000 is the local dev fallback.
 const PORT = process.env.PORT || 5000;
 
+// Render terminates TLS at its edge proxy and forwards the real client IP in
+// X-Forwarded-For. Without this, req.ip is the proxy's address for every
+// request — which silently collapses any IP-keyed rate limiter into a single
+// global bucket shared by all users. One hop, so trust exactly one.
+app.set('trust proxy', 1);
+
 // CORS: the production Vercel origin comes from FRONTEND_URL; localhost stays
 // allowed so the deployed API can also be hit from a local dev frontend.
 // Requests with no Origin header (curl, health checks, server-to-server calls
