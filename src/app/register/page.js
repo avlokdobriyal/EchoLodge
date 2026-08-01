@@ -54,7 +54,7 @@ export default function RegisterPage() {
                 return;
             }
             notify("Account created — welcome to EchoLodge!", "success");
-            router.push("/reviews");
+            router.push("/rooms");
         } catch {
             notify("Something went wrong. Is the backend running?", "error");
             setSubmitting(false);
@@ -64,10 +64,10 @@ export default function RegisterPage() {
     return (
         <div className="max-w-md mx-auto px-4 py-24">
             <div className="text-center mb-8">
-                <p className="text-sm font-medium uppercase tracking-wider text-clay">Join EchoLodge</p>
+                <p className="text-sm font-medium uppercase tracking-wider text-clay">New guest</p>
                 <h1 className="mt-2 font-display text-4xl font-semibold text-ink dark:text-parchment">Create your account</h1>
                 <p className="mt-3 text-ink-soft dark:text-parchment/70">
-                    Set up access to manage your homestay reviews.
+                    An account lets you book rooms, track your stays, and review them afterwards.
                 </p>
             </div>
 
@@ -86,7 +86,7 @@ export default function RegisterPage() {
                 <Input
                     label="Email"
                     type="email"
-                    placeholder="host@echolodge.in"
+                    placeholder="you@example.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     error={errors.email}
@@ -111,7 +111,7 @@ export default function RegisterPage() {
 
                 <button
                     type="button"
-                    onClick={() => signIn("google", { callbackUrl: "/reviews" })}
+                    onClick={() => signIn("google", { callbackUrl: "/rooms" })}
                     className="w-full inline-flex justify-center items-center gap-3 px-5 py-3 rounded-full border border-sand dark:border-bark-soft bg-surface dark:bg-bark text-ink dark:text-parchment font-medium hover:bg-sand/50 dark:hover:bg-bark-soft transition-colors focus:outline-none focus:ring-2 focus:ring-forest/40"
                 >
                     <svg className="w-5 h-5" viewBox="0 0 24 24" aria-hidden="true">
