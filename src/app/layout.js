@@ -1,4 +1,4 @@
-import { Geist, Geist_Mono, Fraunces } from "next/font/google";
+import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
@@ -17,12 +17,6 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-const fraunces = Fraunces({
-  variable: "--font-fraunces",
-  subsets: ["latin"],
-  display: "swap",
-});
-
 export const metadata = {
   title: "EchoLodge — riverside rooms in Rishikesh, booked direct",
   description:
@@ -31,8 +25,8 @@ export const metadata = {
 
 export const viewport = {
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#faf5ec" },
-    { media: "(prefers-color-scheme: dark)", color: "#171310" },
+    { media: "(prefers-color-scheme: light)", color: "#f8f5f0" },
+    { media: "(prefers-color-scheme: dark)", color: "#12161c" },
   ],
 };
 
@@ -45,17 +39,20 @@ export default function RootLayout({ children }) {
     <html
       lang="en"
       suppressHydrationWarning
-      className={`${geistSans.variable} ${geistMono.variable} ${fraunces.variable} h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>
-      <body className="flex flex-col min-h-screen transition-colors duration-300 bg-cream dark:bg-bark text-ink dark:text-parchment">
+      <body className="flex flex-col min-h-screen bg-canvas text-ink transition-colors duration-300">
         <SessionProvider>
           <ThemeProvider>
             <ToastProvider>
               <Navbar />
-              <main className="flex-grow">
+              {/* The navbar is fixed so the homepage photograph can run under
+                  it edge to edge; this reserves the height it no longer takes
+                  up in flow. Hero cancels it with a matching -mt-16. */}
+              <main className="flex-grow pt-16">
                 <ErrorBoundary>{children}</ErrorBoundary>
               </main>
               <Footer />
