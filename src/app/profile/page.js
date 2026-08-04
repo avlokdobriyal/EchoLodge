@@ -22,9 +22,12 @@ function formatDate(value) {
     return d.toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" });
 }
 
+// Booking status reads as information, so it sits in the cool half of the
+// palette; cancelled uses the alert tone, which is the one thing here a guest
+// might need to spot at a glance.
 const STATUS_STYLES = {
-    CONFIRMED: "bg-forest/10 text-forest dark:bg-moss/20 dark:text-moss",
-    CANCELLED: "bg-clay/10 text-clay dark:bg-clay/20",
+    CONFIRMED: "border-ridge-400/40 text-ridge-600 dark:text-ridge-300",
+    CANCELLED: "border-alert/40 text-alert",
 };
 
 // The signed-in user's bookings with the full lifecycle: view, cancel
@@ -93,17 +96,17 @@ function MyBookings({ token }) {
     };
 
     return (
-        <div className="mt-8 rounded-3xl bg-surface dark:bg-bark-soft border border-sand dark:border-bark-soft shadow-sm p-6 sm:p-8">
-            <h2 className="font-display text-xl font-semibold text-ink dark:text-parchment">
+        <div className="mt-8 rounded-md bg-surface border border-line shadow-sm p-6 sm:p-8">
+            <h2 className="text-xl font-semibold text-ink">
                 My bookings
             </h2>
 
             {loading ? (
                 <div className="flex justify-center py-10">
-                    <Loader className="w-6 h-6 text-forest dark:text-moss" />
+                    <Loader className="w-6 h-6 text-ink" />
                 </div>
             ) : error ? (
-                <p className="mt-4 text-clay">{error}</p>
+                <p className="mt-4 text-dawn-500">{error}</p>
             ) : bookings.length === 0 ? (
                 <EmptyState
                     className="mt-4"
@@ -120,22 +123,22 @@ function MyBookings({ token }) {
                     {bookings.map((booking) => (
                         <li
                             key={booking.id}
-                            className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-2xl bg-canvas dark:bg-bark border border-sand dark:border-bark-soft p-4"
+                            className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-md bg-surface-2 border border-line p-4"
                         >
                             <div className="min-w-0">
                                 <div className="flex items-center gap-2 flex-wrap">
-                                    <p className="font-medium text-ink dark:text-parchment truncate">
+                                    <p className="font-medium text-ink truncate">
                                         {booking.room?.name ?? `Room #${booking.roomId}`}
                                     </p>
                                     <span
-                                        className={`px-2.5 py-0.5 rounded-full text-xs font-semibold ${
+                                        className={`eyebrow shrink-0 rounded-xs border px-2 py-1 ${
                                             STATUS_STYLES[booking.status] ?? STATUS_STYLES.CONFIRMED
                                         }`}
                                     >
                                         {booking.status}
                                     </span>
                                 </div>
-                                <p className="mt-1 text-xs text-ink-soft dark:text-parchment/60">
+                                <p className="mt-1 text-xs text-ink-muted">
                                     {formatDate(booking.checkInDate)} → {formatDate(booking.checkOutDate)} ·{" "}
                                     {formatINR(booking.totalPrice)}
                                 </p>
@@ -189,31 +192,31 @@ function ProfileContent() {
     return (
         <div className="max-w-2xl mx-auto px-4 py-24">
             <div className="text-center mb-8 animate-fade-in-up">
-                <p className="text-sm font-medium uppercase tracking-wider text-clay">Your account</p>
-                <h1 className="mt-2 font-display text-4xl font-semibold text-ink dark:text-parchment">Profile</h1>
+                <p className="eyebrow text-ink-faint">Your account</p>
+                <h1 className="mt-2 text-4xl font-semibold text-ink">Profile</h1>
             </div>
 
-            <div className="rounded-3xl bg-surface dark:bg-bark-soft border border-sand dark:border-bark-soft shadow-sm p-8">
+            <div className="rounded-md bg-surface border border-line shadow-sm p-8">
                 <div className="flex items-center gap-5">
-                    <div className="flex items-center justify-center w-16 h-16 rounded-full bg-forest text-parchment font-display text-2xl font-semibold">
+                    <div className="flex items-center justify-center w-16 h-16 rounded-full bg-ridge-800 text-quartz-200 text-2xl font-semibold">
                         {initial}
                     </div>
                     <div>
-                        <p className="font-display text-xl font-semibold text-ink dark:text-parchment">
+                        <p className="text-xl font-semibold text-ink">
                             {user?.name || "EchoLodge host"}
                         </p>
-                        <p className="text-ink-soft dark:text-parchment/70">{user?.email}</p>
+                        <p className="text-ink-muted">{user?.email}</p>
                     </div>
                 </div>
 
                 <dl className="mt-8 grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div className="rounded-2xl bg-canvas dark:bg-bark p-4">
-                        <dt className="text-xs uppercase tracking-wider text-ink-soft dark:text-parchment/50">Email</dt>
-                        <dd className="mt-1 text-ink dark:text-parchment break-all">{user?.email}</dd>
+                    <div className="rounded-md bg-surface-2 p-4">
+                        <dt className="text-xs uppercase tracking-wider text-ink-faint">Email</dt>
+                        <dd className="mt-1 text-ink break-all">{user?.email}</dd>
                     </div>
-                    <div className="rounded-2xl bg-canvas dark:bg-bark p-4">
-                        <dt className="text-xs uppercase tracking-wider text-ink-soft dark:text-parchment/50">User ID</dt>
-                        <dd className="mt-1 text-ink dark:text-parchment">{user?.id ?? "—"}</dd>
+                    <div className="rounded-md bg-surface-2 p-4">
+                        <dt className="text-xs uppercase tracking-wider text-ink-faint">User ID</dt>
+                        <dd className="mt-1 text-ink">{user?.id ?? "—"}</dd>
                     </div>
                 </dl>
 

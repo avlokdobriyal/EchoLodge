@@ -30,7 +30,7 @@ export default class ErrorBoundary extends Component {
     if (this.state.hasError) {
       return (
         <div className="max-w-xl mx-auto px-4 py-28 text-center">
-          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-clay/10 text-clay">
+          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-dawn-500/10 text-dawn-500">
             <svg className="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path
                 strokeLinecap="round"
@@ -40,10 +40,10 @@ export default class ErrorBoundary extends Component {
               />
             </svg>
           </div>
-          <h1 className="mt-6 font-display text-3xl font-semibold text-ink dark:text-parchment">
+          <h1 className="mt-6 text-3xl font-semibold text-ink">
             Something drifted off course
           </h1>
-          <p className="mt-3 text-ink-soft dark:text-parchment/70 leading-relaxed">
+          <p className="mt-3 text-ink-muted leading-relaxed">
             An unexpected error interrupted this page. Your data is safe — try
             again, or head back to the river.
           </p>

@@ -129,11 +129,11 @@ function AdminRoomsContent() {
     <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
       <AdminTabs />
       <div className="mb-10">
-        <p className="text-sm font-medium uppercase tracking-wider text-clay">Admin</p>
-        <h1 className="mt-2 font-display text-4xl font-semibold text-ink dark:text-parchment">
+        <p className="eyebrow text-ink-faint">Admin</p>
+        <h1 className="mt-2 text-4xl font-semibold text-ink">
           Manage Rooms
         </h1>
-        <p className="mt-2 text-ink-soft dark:text-parchment/70">
+        <p className="mt-2 text-ink-muted">
           Add new rooms to the catalogue or remove existing ones.
         </p>
       </div>
@@ -143,9 +143,9 @@ function AdminRoomsContent() {
         <form
           onSubmit={handleCreate}
           noValidate
-          className="lg:col-span-1 h-fit rounded-3xl bg-surface dark:bg-bark-soft border border-sand dark:border-bark-soft shadow-sm p-6 space-y-4"
+          className="lg:col-span-1 h-fit rounded-md bg-surface border border-line shadow-sm p-6 space-y-4"
         >
-          <h2 className="font-display text-lg font-semibold text-ink dark:text-parchment">
+          <h2 className="text-lg font-semibold text-ink">
             Add a room
           </h2>
           <Input
@@ -156,11 +156,11 @@ function AdminRoomsContent() {
             error={errors.name}
           />
           <div className="flex flex-col space-y-1 w-full">
-            <label className="text-sm font-medium text-ink dark:text-parchment">Category</label>
+            <label className="text-sm font-medium text-ink">Category</label>
             <select
               value={form.category}
               onChange={setField("category")}
-              className="px-4 py-2.5 bg-surface dark:bg-bark border border-sand dark:border-bark-soft rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-forest/40 text-ink dark:text-parchment transition-colors"
+              className="px-4 py-2.5 bg-surface border border-line rounded-sm shadow-sm focus:border-accent focus:outline-none text-ink transition-colors"
             >
               {CATEGORIES.map((c) => (
                 <option key={c} value={c}>
@@ -170,17 +170,17 @@ function AdminRoomsContent() {
             </select>
           </div>
           <div className="flex flex-col space-y-1 w-full">
-            <label className="text-sm font-medium text-ink dark:text-parchment">Description</label>
+            <label className="text-sm font-medium text-ink">Description</label>
             <textarea
               rows={3}
               placeholder="Include Complimentary Terrace Access…"
               value={form.description}
               onChange={setField("description")}
-              className={`px-4 py-2.5 bg-surface dark:bg-bark border rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-forest/40 text-ink dark:text-parchment placeholder-ink-soft/60 dark:placeholder-parchment/40 transition-colors ${
-                errors.description ? "border-clay" : "border-sand dark:border-bark-soft"
+              className={`px-4 py-2.5 bg-surface border rounded-sm shadow-sm focus:border-accent focus:outline-none text-ink placeholder:text-ink-faint transition-colors ${
+                errors.description ? "border-dawn-500" : "border-line"
               }`}
             />
-            {errors.description && <p className="text-xs text-clay mt-1">{errors.description}</p>}
+            {errors.description && <p className="text-xs text-dawn-500 mt-1">{errors.description}</p>}
           </div>
           <Input
             label="Price per night (₹)"
@@ -200,7 +200,7 @@ function AdminRoomsContent() {
         <div className="lg:col-span-2">
           {loading ? (
             <div className="flex justify-center py-24">
-              <Loader className="w-8 h-8 text-forest dark:text-moss" />
+              <Loader className="w-8 h-8 text-ink" />
             </div>
           ) : rooms.length === 0 ? (
             <EmptyState
@@ -212,11 +212,11 @@ function AdminRoomsContent() {
               {rooms.map((room) => (
                 <li
                   key={room.id}
-                  className="flex items-center justify-between gap-4 rounded-2xl bg-surface dark:bg-bark-soft border border-sand dark:border-bark-soft p-4"
+                  className="flex items-center justify-between gap-4 rounded-md bg-surface border border-line p-4"
                 >
                   <div className="min-w-0">
-                    <p className="font-medium text-ink dark:text-parchment truncate">{room.name}</p>
-                    <p className="text-xs text-ink-soft dark:text-parchment/60">
+                    <p className="font-medium text-ink truncate">{room.name}</p>
+                    <p className="text-xs text-ink-muted">
                       {room.category} · {formatINR(room.pricePerNight)}/night
                     </p>
                   </div>
