@@ -1,10 +1,12 @@
 "use client";
 import { useState, useEffect, useMemo } from "react";
-import Image from "next/image";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { Button, Input, Modal, Loader, notify } from "@/components/ui/index.js";
+import Photo from "@/components/ui/Photo";
 import EmptyState from "@/components/EmptyState";
+import RoomLedger from "@/components/RoomLedger";
+import { Reveal, Stagger, StaggerItem, Counter } from "@/components/motion/index.jsx";
 import { API_BASE } from "@/lib/api";
 import { CATEGORY_META, metaFor } from "@/lib/categories";
 import { useSlowLoad } from "@/lib/useSlowLoad";
@@ -48,7 +50,9 @@ function groupByCategory(rooms) {
     groups.get(room.category).inventory += 1;
   }
   return [...groups.values()].sort(
-    (a, b) => (CATEGORY_META[a.category]?.order ?? 99) - (CATEGORY_META[b.category]?.order ?? 99)
+    (a, b) =>
+      (CATEGORY_META[a.category]?.order ?? 99) -
+      (CATEGORY_META[b.category]?.order ?? 99)
   );
 }
 
@@ -58,22 +62,34 @@ function QuantityStepper({ value, max, subtitle, onChange }) {
   const decrement = () => onChange(Math.max(1, value - 1));
   const increment = () => onChange(Math.min(max, value + 1));
   const stepBtn =
-    "flex h-9 w-9 items-center justify-center rounded-full border border-sand dark:border-bark-soft text-lg font-medium text-ink dark:text-parchment transition-all hover:border-forest hover:text-forest dark:hover:border-moss dark:hover:text-moss disabled:opacity-30 disabled:hover:border-sand dark:disabled:hover:border-bark-soft disabled:hover:text-ink dark:disabled:hover:text-parchment";
+    "flex h-9 w-9 items-center justify-center rounded-sm border border-line-strong text-lg leading-none text-ink transition-colors hover:border-accent hover:text-accent-text disabled:opacity-30 disabled:hover:border-line-strong disabled:hover:text-ink";
 
   return (
-    <div className="flex items-center justify-between">
+    <div className="flex items-center justify-between gap-4">
       <div>
-        <p className="text-sm font-medium text-ink dark:text-parchment">Rooms</p>
-        <p className="text-xs text-ink-soft dark:text-parchment/50">{subtitle}</p>
+        <p className="text-sm font-medium text-ink">Rooms</p>
+        <p className="text-xs text-ink-faint">{subtitle}</p>
       </div>
-      <div className="flex items-center gap-3">
-        <button type="button" onClick={decrement} disabled={value <= 1} aria-label="Fewer rooms" className={stepBtn}>
+      <div className="flex items-center gap-2">
+        <button
+          type="button"
+          onClick={decrement}
+          disabled={value <= 1}
+          aria-label="Fewer rooms"
+          className={stepBtn}
+        >
           −
         </button>
-        <span className="w-6 text-center font-display text-lg font-semibold text-ink dark:text-parchment">
+        <span className="num w-7 text-center text-lg font-semibold text-ink">
           {value}
         </span>
-        <button type="button" onClick={increment} disabled={value >= max} aria-label="More rooms" className={stepBtn}>
+        <button
+          type="button"
+          onClick={increment}
+          disabled={value >= max}
+          aria-label="More rooms"
+          className={stepBtn}
+        >
           +
         </button>
       </div>
@@ -88,42 +104,64 @@ function CategoryTile({ group, index, onOpen }) {
     <button
       type="button"
       onClick={() => onOpen(group)}
-      className={`card-lift animate-fade-in-up delay-${(index + 1) * 100} group flex flex-col text-left rounded-3xl bg-surface dark:bg-bark-soft border border-sand dark:border-bark-soft shadow-sm overflow-hidden focus:outline-none focus:ring-2 focus:ring-forest/40`}
+      className="card-lift group flex h-full w-full flex-col overflow-hidden rounded-md border border-line bg-surface text-left"
     >
-      {/* Banner — the room photo, with the gradient as a fallback for any
-          category added later that has no image yet. */}
-      <div className={`relative h-48 overflow-hidden bg-gradient-to-br ${meta.accent}`}>
-        {meta.image && (
-          <Image
-            src={meta.image}
-            alt={`${meta.label} at EchoLodge`}
-            fill
-            sizes="(max-width: 768px) 100vw, 33vw"
-            className="object-cover transition-transform duration-500 group-hover:scale-105"
-            priority={index === 0}
-          />
+      <div className="photo-wake relative aspect-[4/3] overflow-hidden bg-surface-2">
+        <Photo
+          src={meta.image}
+          alt={`${meta.label} at EchoLodge`}
+          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+          priority={index === 0}
+          className="object-cover"
+        />
+        <div className="absolute inset-x-0 bottom-0 h-2/5 bg-gradient-to-t from-ridge-950/70 to-transparent" />
+        {meta.tag && (
+          <span className="eyebrow absolute bottom-3 left-3 rounded-xs bg-ridge-950/45 px-2 py-1 text-quartz-100 backdrop-blur-sm">
+            {meta.tag}
+          </span>
         )}
-        {/* Scrim keeps the price chip legible over any photo. */}
-        <div className="absolute inset-0 bg-gradient-to-t from-bark/70 via-bark/10 to-transparent" />
-        <span className="absolute bottom-3 left-4 rounded-full bg-cream/90 dark:bg-bark/90 px-3 py-1 text-xs font-semibold text-ink dark:text-parchment shadow-sm">
-          {group.inventory} room{group.inventory > 1 ? "s" : ""} · {formatINR(group.pricePerNight)}/night
-        </span>
       </div>
 
-      <div className="flex flex-col flex-grow p-6">
-        <span className={`self-start px-3 py-1 rounded-full text-xs font-medium ${meta.chip}`}>
-          {group.category}
-        </span>
-        <h3 className="mt-4 font-display text-2xl font-semibold text-ink dark:text-parchment">
+      <div className="flex flex-grow flex-col p-5">
+        <h3 className="text-xl font-semibold tracking-tight text-ink">
           {meta.shortLabel}
         </h3>
-        <p className="mt-2 text-sm text-ink-soft dark:text-parchment/70 flex-grow leading-relaxed">
+        <p className="mt-2 flex-grow text-[15px] leading-relaxed text-ink-muted">
           {meta.tagline}
         </p>
-        <span className="mt-5 inline-flex items-center gap-1.5 text-sm font-medium text-forest dark:text-moss transition-transform duration-300 group-hover:translate-x-1">
-          View &amp; book
-          <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5-5 5M6 12h12" />
+
+        {/* Price and inventory on one baseline: the two facts a guest compares
+            across categories, so they sit in the same place on every tile. */}
+        <div className="mt-5 flex items-end justify-between gap-4 border-t border-line pt-4">
+          <div>
+            <p className="num text-lg font-semibold text-ink">
+              {formatINR(group.pricePerNight)}
+            </p>
+            <p className="text-xs text-ink-faint">per night</p>
+          </div>
+          <div className="flex flex-col items-end gap-1.5">
+            <RoomLedger total={group.inventory} size="sm" />
+            <span className="num text-xs text-ink-faint">
+              {group.inventory} room{group.inventory > 1 ? "s" : ""}
+            </span>
+          </div>
+        </div>
+
+        <span className="mt-4 inline-flex items-center gap-1.5 text-sm font-medium text-accent-text">
+          Check dates
+          <svg
+            aria-hidden="true"
+            className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={1.8}
+              d="M13 7l5 5-5 5M6 12h12"
+            />
           </svg>
         </span>
       </div>
@@ -180,11 +218,15 @@ function CategoryBookingModal({ group, isOpen, onClose, session, router }) {
   if (!group) return null;
 
   // An answer only counts when it belongs to the range currently on screen.
-  const liveAvailability = availability?.key === rangeKey ? availability.data : null;
+  const liveAvailability =
+    availability?.key === rangeKey ? availability.data : null;
   const isChecking = rangeIsValid && availability?.key !== rangeKey;
 
   // Derived rather than stored, so the stepper can never sit above what's free.
-  const maxSelectable = Math.max(1, liveAvailability?.available ?? group.inventory);
+  const maxSelectable = Math.max(
+    1,
+    liveAvailability?.available ?? group.inventory
+  );
   const effectiveQuantity = Math.min(Math.max(1, quantity), maxSelectable);
 
   const meta = metaFor(group.category);
@@ -224,7 +266,12 @@ function CategoryBookingModal({ group, isOpen, onClose, session, router }) {
           "Content-Type": "application/json",
           Authorization: `Bearer ${session.backendToken}`,
         },
-        body: JSON.stringify({ category: group.category, quantity: effectiveQuantity, checkIn, checkOut }),
+        body: JSON.stringify({
+          category: group.category,
+          quantity: effectiveQuantity,
+          checkIn,
+          checkOut,
+        }),
       });
       const data = await res.json().catch(() => ({}));
       if (res.status === 401) {
@@ -249,86 +296,103 @@ function CategoryBookingModal({ group, isOpen, onClose, session, router }) {
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title={meta.shortLabel}>
+    <Modal isOpen={isOpen} onClose={onClose} title={meta.shortLabel} size="lg">
       <form onSubmit={handleSubmit} noValidate className="space-y-5">
-        {meta.image && (
-          <div className="relative h-44 w-full overflow-hidden rounded-2xl">
-            <Image
-              src={meta.image}
-              alt={`${meta.label} at EchoLodge`}
-              fill
-              sizes="(max-width: 640px) 100vw, 480px"
-              className="object-cover"
-            />
-          </div>
-        )}
+        <div className="relative aspect-[16/9] w-full overflow-hidden rounded-sm bg-surface-2">
+          <Photo
+            src={meta.image}
+            alt={`${meta.label} at EchoLodge`}
+            sizes="(max-width: 640px) 100vw, 512px"
+            className="object-cover"
+          />
+        </div>
 
-        <p className="text-sm text-ink-soft dark:text-parchment/70 leading-relaxed">
+        <p className="text-[15px] leading-relaxed text-ink-muted">
           {group.description}
         </p>
 
         {meta.highlights.length > 0 && (
-          <ul className="flex flex-wrap gap-2">
+          <ul className="space-y-1.5">
             {meta.highlights.map((h) => (
               <li
                 key={h}
-                className="rounded-full bg-canvas dark:bg-bark border border-sand dark:border-bark-soft px-3 py-1 text-xs text-ink-soft dark:text-parchment/70"
+                className="flex items-start gap-2.5 text-sm text-ink-muted"
               >
+                <span
+                  aria-hidden="true"
+                  className="mt-2 h-px w-3 flex-shrink-0 bg-line-strong"
+                />
                 {h}
               </li>
             ))}
           </ul>
         )}
 
-        <p className="text-sm text-ink-soft dark:text-parchment/70">
-          {formatINR(group.pricePerNight)} per night · {group.inventory} room
-          {group.inventory > 1 ? "s" : ""} in this category
-        </p>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <Input
+            label="Check-in"
+            type="date"
+            min={todayISO()}
+            value={checkIn}
+            onChange={(e) => setCheckIn(e.target.value)}
+            error={errors.checkIn}
+          />
+          <Input
+            label="Check-out"
+            type="date"
+            min={checkIn || todayISO()}
+            value={checkOut}
+            onChange={(e) => setCheckOut(e.target.value)}
+            error={errors.checkOut}
+          />
+        </div>
 
-        <Input
-          label="Check-in"
-          type="date"
-          min={todayISO()}
-          value={checkIn}
-          onChange={(e) => setCheckIn(e.target.value)}
-          error={errors.checkIn}
-        />
-        <Input
-          label="Check-out"
-          type="date"
-          min={checkIn || todayISO()}
-          value={checkOut}
-          onChange={(e) => setCheckOut(e.target.value)}
-          error={errors.checkOut}
-        />
-
-        {/* Live availability for the chosen range, resolved before submit. */}
+        {/* Live availability for the chosen range, resolved before submit.
+            The ledger is the point here: one mark per real room, lit if it's
+            free. A guest reads "two left" off the marks before they read it
+            off the sentence. */}
         {(isChecking || liveAvailability) && (
           <div
-            className={`rounded-2xl border p-4 text-sm animate-fade-in ${
+            className={`animate-fade-in rounded-md border p-4 ${
               soldOut
-                ? "border-clay/40 bg-clay/10 text-clay-dark dark:text-clay"
-                : "border-sand dark:border-bark-soft bg-canvas dark:bg-bark text-ink-soft dark:text-parchment/70"
+                ? "border-alert/40 bg-alert/5"
+                : "border-line bg-surface-2"
             }`}
           >
-            {isChecking ? (
-              <span className="flex items-center gap-2">
-                <Loader className="w-4 h-4 text-forest dark:text-moss" />
-                Checking availability for these dates…
-              </span>
-            ) : soldOut ? (
-              <>
-                <span className="font-medium">Fully booked for these dates.</span> Try a
-                different range — other categories may still be free.
-              </>
-            ) : (
-              <>
-                <span className="font-medium text-ink dark:text-parchment">
-                  {liveAvailability.available} of {liveAvailability.inventory}
-                </span>{" "}
-                room{liveAvailability.available === 1 ? "" : "s"} available for these dates.
-              </>
-            )}
+            <div className="flex items-center justify-between gap-4">
+              <p className="eyebrow text-ink-faint">
+                {soldOut ? "Fully booked" : "Availability"}
+              </p>
+              {!isChecking && liveAvailability && (
+                <RoomLedger
+                  total={liveAvailability.inventory}
+                  available={liveAvailability.available}
+                />
+              )}
+            </div>
+
+            <p className="mt-3 text-sm text-ink-muted">
+              {isChecking ? (
+                <span className="flex items-center gap-2">
+                  <Loader className="h-3.5 w-3.5 text-ink-faint" />
+                  Checking these dates…
+                </span>
+              ) : soldOut ? (
+                <>
+                  Nothing free in this category for these dates. Try a different
+                  range, or another room type.
+                </>
+              ) : (
+                <>
+                  <span className="num font-semibold text-ink">
+                    <Counter value={liveAvailability.available} /> of{" "}
+                    {liveAvailability.inventory}
+                  </span>{" "}
+                  room{liveAvailability.available === 1 ? "" : "s"} free for
+                  these dates.
+                </>
+              )}
+            </p>
           </div>
         )}
 
@@ -344,12 +408,12 @@ function CategoryBookingModal({ group, isOpen, onClose, session, router }) {
         />
 
         {nights > 0 && (
-          <div className="rounded-2xl bg-canvas dark:bg-bark p-4 flex items-center justify-between animate-fade-in">
-            <span className="text-sm text-ink-soft dark:text-parchment/70">
-              {effectiveQuantity} room{effectiveQuantity > 1 ? "s" : ""} × {nights} night{nights > 1 ? "s" : ""} ×{" "}
+          <div className="animate-fade-in flex items-center justify-between gap-4 border-t border-line pt-4">
+            <span className="num text-sm text-ink-muted">
+              {effectiveQuantity} × {nights} night{nights > 1 ? "s" : ""} ×{" "}
               {formatINR(group.pricePerNight)}
             </span>
-            <span className="font-display text-lg font-semibold text-ink dark:text-parchment">
+            <span className="num text-xl font-semibold text-ink">
               {formatINR(total)}
             </span>
           </div>
@@ -367,8 +431,25 @@ function CategoryBookingModal({ group, isOpen, onClose, session, router }) {
               ? "Fully booked for these dates"
               : "Confirm booking"}
         </Button>
+
+        <p className="text-center text-xs text-ink-faint">
+          No payment now — settle at the property.
+        </p>
       </form>
     </Modal>
+  );
+}
+
+function TileSkeleton() {
+  return (
+    <div className="overflow-hidden rounded-md border border-line bg-surface">
+      <div className="skeleton aspect-[4/3] w-full" />
+      <div className="space-y-3 p-5">
+        <div className="skeleton h-5 w-1/2 rounded-xs" />
+        <div className="skeleton h-3 w-full rounded-xs" />
+        <div className="skeleton h-3 w-3/4 rounded-xs" />
+      </div>
+    </div>
   );
 }
 
@@ -401,50 +482,69 @@ export default function RoomsPage() {
 
   const groups = useMemo(() => groupByCategory(rooms), [rooms]);
   const isSlowLoad = useSlowLoad(loading);
+  const totalRooms = groups.reduce((n, g) => n + g.inventory, 0);
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
-      <div className="text-center mb-14 animate-fade-in-up">
-        <p className="text-sm font-medium uppercase tracking-wider text-clay">Stay with us</p>
-        <h1 className="mt-2 font-display text-4xl sm:text-5xl font-semibold text-ink dark:text-parchment">
-          Rooms &amp; Suites
-        </h1>
-        <p className="mt-3 max-w-2xl mx-auto text-ink-soft dark:text-parchment/70">
-          Three ways to stay by the river — every one of them with complimentary
-          terrace access and the Ganga a short walk away.
+    <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 sm:py-20 lg:px-8">
+      <Reveal className="max-w-3xl">
+        <p className="eyebrow text-ink-faint">
+          {totalRooms > 0
+            ? `${totalRooms} rooms · three categories`
+            : "Rooms & suites"}
         </p>
+        <h1 className="display mt-4 text-ink">Pick your nights.</h1>
+        <p className="mt-4 max-w-xl text-[17px] leading-relaxed text-ink-muted">
+          Every room here has complimentary terrace access and the Ganga a short
+          walk away. Choose a category and we’ll show you exactly what’s free
+          before you book anything.
+        </p>
+      </Reveal>
+
+      <div className="mt-12">
+        {loading && (
+          <>
+            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+              <TileSkeleton />
+              <TileSkeleton />
+              <TileSkeleton />
+            </div>
+            {isSlowLoad && (
+              <p className="animate-fade-in mx-auto mt-8 max-w-md text-center text-sm text-ink-muted">
+                Waking up our booking service — this can take up to a minute on
+                the first visit of the day. Thanks for your patience.
+              </p>
+            )}
+          </>
+        )}
+
+        {error && !loading && (
+          <EmptyState
+            title="We couldn't load the rooms"
+            hint={`${error}. Give it a moment and reload — the booking service may still be waking up.`}
+          />
+        )}
+
+        {!loading && !error && groups.length === 0 && (
+          <EmptyState
+            title="No rooms available right now"
+            hint="We're preparing the lodge — check back soon."
+          />
+        )}
+
+        {!loading && !error && groups.length > 0 && (
+          <Stagger className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            {groups.map((group, index) => (
+              <StaggerItem key={group.category} className="h-full">
+                <CategoryTile
+                  group={group}
+                  index={index}
+                  onOpen={setActiveGroup}
+                />
+              </StaggerItem>
+            ))}
+          </Stagger>
+        )}
       </div>
-
-      {loading && (
-        <div className="flex flex-col items-center gap-3 py-24">
-          <Loader className="w-8 h-8 text-forest dark:text-moss" />
-          {isSlowLoad && (
-            <p className="max-w-sm text-center text-sm text-ink-soft dark:text-parchment/60 animate-fade-in">
-              Waking up our booking service — this can take up to a minute on the
-              first visit of the day. Thanks for your patience.
-            </p>
-          )}
-        </div>
-      )}
-
-      {error && !loading && (
-        <p className="text-center text-clay">{error} — please try again in a moment.</p>
-      )}
-
-      {!loading && !error && groups.length === 0 && (
-        <EmptyState
-          title="No rooms available right now"
-          hint="Our hosts are preparing the lodge — check back soon."
-        />
-      )}
-
-      {!loading && !error && groups.length > 0 && (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          {groups.map((group, index) => (
-            <CategoryTile key={group.category} group={group} index={index} onOpen={setActiveGroup} />
-          ))}
-        </div>
-      )}
 
       {/* Keyed by category so opening a different room type remounts the form
           with fresh state, rather than clearing six fields in an effect. */}

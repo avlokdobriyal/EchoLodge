@@ -1,21 +1,26 @@
 import Hero from "../components/Hero";
 import FeaturedStays from "../components/FeaturedStays";
+import { Reveal, Stagger, StaggerItem } from "../components/motion/index.jsx";
+import { Button } from "../components/ui/index.js";
 
-const features = [
+// Three reasons to book here rather than through a travel site. Not a sequence,
+// so they aren't numbered — each is topped with a hairline instead, which
+// separates them without implying an order that doesn't exist.
+const reasons = [
   {
+    label: "The rate",
     title: "Booked direct",
-    desc: "No travel-site commission skimmed off the top — you pay us, we set the rate.",
-    icon: "M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8V6m0 12v-2",
+    desc: "No travel-site commission skimmed off the top. You pay us, we set the rate, and nobody in between takes a cut of your stay.",
   },
   {
-    title: "Rooted in nature",
-    desc: "Solar hot water, local sourcing, and no single-use plastic anywhere on site.",
-    icon: "M12 3v18m0 0c-3.5 0-6-2.5-6-6 3.5 0 6 2.5 6 6zm0-6c0-3.5 2.5-6 6-6 0 3.5-2.5 6-6 6z",
+    label: "The place",
+    title: "On the river",
+    desc: "Ten minutes on foot from Laxman Jhula bridge. Close enough to walk to dinner, far enough that you can hear the water at night.",
   },
   {
+    label: "The people",
     title: "Run by the family",
-    desc: "The same people at the desk, on the terrace, and pouring the morning chai.",
-    icon: "M17 20h5v-2a4 4 0 00-3-3.87M9 20H4v-2a4 4 0 013-3.87m6-1.13a4 4 0 10-4 0M12 4a4 4 0 100 8 4 4 0 000-8z",
+    desc: "The same people at the desk, on the terrace, and pouring the morning chai. Twelve rooms is small enough to keep it that way.",
   },
 ];
 
@@ -24,36 +29,62 @@ export default function Home() {
     <div>
       <Hero />
 
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
-        <div className="max-w-2xl">
-          <h2 className="font-display text-3xl md:text-4xl font-semibold text-ink dark:text-parchment">
-            Our rooms
-          </h2>
-          <p className="mt-3 text-ink-soft dark:text-parchment/70">
-            Three ways to stay, straight from our live inventory — real rooms,
-            real prices, bookable right now.
-          </p>
-        </div>
+      <section className="mx-auto max-w-7xl px-4 py-20 sm:px-6 sm:py-24 lg:px-8">
+        <Reveal>
+          <p className="eyebrow text-ink-faint">Three ways to stay</p>
+          <div className="mt-4 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+            <h2 className="heading max-w-xl text-ink">
+              Every room, straight from the live inventory.
+            </h2>
+            <p className="max-w-sm text-[15px] leading-relaxed text-ink-muted">
+              Real rooms, real rates, bookable right now — nothing here is a
+              sample.
+            </p>
+          </div>
+        </Reveal>
 
         <FeaturedStays />
       </section>
 
-      <section className="border-t border-sand dark:border-bark-soft bg-sand/40 dark:bg-bark-soft/40">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
-            {features.map((f) => (
-              <div key={f.title} className="group transition-transform duration-300 hover:-translate-y-1">
-                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-forest/10 dark:bg-moss/15 text-forest dark:text-moss transition-colors duration-300 group-hover:bg-forest group-hover:text-cream dark:group-hover:bg-moss dark:group-hover:text-bark">
-                  <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d={f.icon} />
-                  </svg>
-                </div>
-                <h3 className="mt-5 font-display text-xl font-semibold text-ink dark:text-parchment">{f.title}</h3>
-                <p className="mt-2 text-ink-soft dark:text-parchment/70 leading-relaxed">{f.desc}</p>
-              </div>
+      {/* The valley still in shadow. A deep cool band here is the palette's
+          whole idea stated once at full size, and it gives the page a rhythm —
+          bright photograph, warm stone, cold shadow, warm stone again — that
+          three tinted-beige sections in a row never would. */}
+      <section className="bg-ridge-900">
+        <div className="mx-auto max-w-7xl px-4 py-20 sm:px-6 sm:py-24 lg:px-8">
+          <Stagger className="grid grid-cols-1 gap-10 md:grid-cols-3 md:gap-12">
+            {reasons.map((r) => (
+              <StaggerItem key={r.title} className="group">
+                {/* Hairline warms on hover — the dawn line at column scale. */}
+                <div className="h-px w-full bg-ridge-700 transition-colors duration-500 group-hover:bg-accent" />
+                <p className="eyebrow mt-5 text-ridge-300">{r.label}</p>
+                <h3 className="mt-3 text-xl font-semibold tracking-tight text-quartz-100">
+                  {r.title}
+                </h3>
+                <p className="mt-3 text-[15px] leading-relaxed text-ridge-200">
+                  {r.desc}
+                </p>
+              </StaggerItem>
             ))}
-          </div>
+          </Stagger>
         </div>
+      </section>
+
+      <section className="mx-auto max-w-7xl px-4 py-20 sm:px-6 sm:py-24 lg:px-8">
+        <Reveal className="flex flex-col items-start gap-6 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <h2 className="heading max-w-lg text-ink">
+              Check the dates you want.
+            </h2>
+            <p className="mt-3 max-w-md text-[15px] leading-relaxed text-ink-muted">
+              Availability is shown before you commit to anything — pick your
+              nights and see exactly what’s free.
+            </p>
+          </div>
+          <Button href="/rooms" size="lg">
+            See availability
+          </Button>
+        </Reveal>
       </section>
     </div>
   );
