@@ -1,6 +1,8 @@
 "use client";
 import { useState, useEffect } from "react";
 import Card from "./Card";
+import RoomLedger from "./RoomLedger";
+import { Stagger, StaggerItem } from "./motion/index.jsx";
 import { API_BASE } from "@/lib/api";
 import { metaFor } from "@/lib/categories";
 
@@ -33,12 +35,12 @@ function groupByCategory(rooms) {
 
 function SkeletonCard() {
   return (
-    <div className="rounded-3xl bg-surface dark:bg-bark-soft border border-sand dark:border-bark-soft p-6 animate-pulse">
-      <div className="h-5 w-2/3 rounded-full bg-sand dark:bg-bark" />
-      <div className="mt-4 space-y-2">
-        <div className="h-3 w-full rounded-full bg-sand dark:bg-bark" />
-        <div className="h-3 w-5/6 rounded-full bg-sand dark:bg-bark" />
-        <div className="h-3 w-1/2 rounded-full bg-sand dark:bg-bark" />
+    <div className="overflow-hidden rounded-md border border-line bg-surface">
+      <div className="skeleton aspect-[4/3] w-full" />
+      <div className="space-y-3 p-5">
+        <div className="skeleton h-4 w-2/3 rounded-xs" />
+        <div className="skeleton h-3 w-full rounded-xs" />
+        <div className="skeleton h-3 w-4/5 rounded-xs" />
       </div>
     </div>
   );
@@ -67,9 +69,13 @@ export default function FeaturedStays() {
 
   if (failed) {
     return (
-      <p className="mt-10 text-ink-soft dark:text-parchment/60">
-        Our live room inventory is taking a moment — see everything on the{" "}
-        <a href="/rooms" className="text-forest dark:text-moss underline underline-offset-2">
+      <p className="mt-10 rounded-md border border-line bg-surface-2/60 px-5 py-4 text-[15px] text-ink-muted">
+        The live room list is taking a moment to wake up. You can see everything
+        on the{" "}
+        <a
+          href="/rooms"
+          className="text-accent-text underline underline-offset-2"
+        >
           rooms page
         </a>
         .
@@ -79,7 +85,7 @@ export default function FeaturedStays() {
 
   if (!groups) {
     return (
-      <div className="mt-10 grid grid-cols-1 md:grid-cols-3 gap-8">
+      <div className="mt-12 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
         <SkeletonCard />
         <SkeletonCard />
         <SkeletonCard />
@@ -88,28 +94,38 @@ export default function FeaturedStays() {
   }
 
   return (
-    <div className="mt-10 grid grid-cols-1 md:grid-cols-3 gap-8">
+    <Stagger className="mt-12 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
       {groups.map((group, index) => {
         const meta = metaFor(group.category);
         return (
-        <div key={group.category} className={`animate-fade-in-up ${index < 3 ? `delay-${(index + 1) * 100}` : ""}`}>
-          <Card
-            title={group.category}
-            desc={group.description}
-            image={meta.image}
-            priority={index === 0}
-            tag={meta.tag ?? `${group.count} rooms`}
-          />
-          <p className="mt-3 px-2 text-sm text-ink-soft dark:text-parchment/60">
-            From{" "}
-            <span className="font-semibold text-ink dark:text-parchment">
-              {formatINR(group.pricePerNight)}
-            </span>
-            /night · {group.count} room{group.count > 1 ? "s" : ""}
-          </p>
-        </div>
+          <StaggerItem key={group.category} className="flex flex-col">
+            <Card
+              title={group.category}
+              desc={group.description}
+              image={meta.image}
+              priority={index === 0}
+              tag={meta.tag ?? `${group.count} rooms`}
+            />
+            <div className="mt-3 flex items-end justify-between gap-4">
+              <p className="text-sm text-ink-muted">
+                From{" "}
+                <span className="num font-semibold text-ink">
+                  {formatINR(group.pricePerNight)}
+                </span>
+                <span className="text-ink-faint"> / night</span>
+              </p>
+              {/* The ledger, counting only. It fills in with real availability
+                  on the rooms page once there are dates to check against. */}
+              <div className="flex items-center gap-2">
+                <RoomLedger total={group.count} size="sm" />
+                <span className="num text-xs text-ink-faint">
+                  {group.count} room{group.count > 1 ? "s" : ""}
+                </span>
+              </div>
+            </div>
+          </StaggerItem>
         );
       })}
-    </div>
+    </Stagger>
   );
 }

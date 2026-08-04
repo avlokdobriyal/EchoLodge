@@ -1,6 +1,9 @@
 /**
  * Friendly placeholder for lists with no data yet.
  *
+ * An empty screen is an invitation, so the copy passed in should say what to do
+ * next rather than only reporting that there's nothing here.
+ *
  * @param {Object} props
  * @param {string} props.title - Main empty-state line
  * @param {string} [props.hint] - Softer supporting line
@@ -10,22 +13,24 @@
 export default function EmptyState({ title, hint, action, className = "" }) {
   return (
     <div
-      className={`rounded-3xl border border-dashed border-sand dark:border-bark-soft py-14 px-6 text-center animate-fade-in ${className}`}
+      className={`animate-fade-in rounded-md border border-line bg-surface-2/60 px-6 py-14 text-center ${className}`}
     >
-      <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-forest/10 dark:bg-moss/15 text-forest dark:text-moss">
-        {/* Lotus-ish leaf mark — matches the organic brand language */}
-        <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={1.8}
-            d="M12 3c2.5 2.5 3.5 5.5 3.5 8.5S14.5 17 12 19c-2.5-2-3.5-4.5-3.5-7.5S9.5 5.5 12 3zM4 13c2 .5 3.8 1.6 5 3.5M20 13c-2 .5-3.8 1.6-5 3.5"
-          />
+      <div className="mx-auto flex h-11 w-16 items-end justify-center overflow-hidden rounded-xs">
+        {/* The same ridge silhouette the image fallback uses, so "nothing here
+            yet" looks like part of the site rather than a missing asset. */}
+        <svg
+          aria-hidden="true"
+          viewBox="0 0 120 60"
+          preserveAspectRatio="none"
+          className="h-full w-full text-line-strong"
+          fill="currentColor"
+        >
+          <path d="M0 60h120V34l-18-14-13 10-16-18-19 22-12-8-16 14-26 6z" />
         </svg>
       </div>
-      <p className="mt-4 font-medium text-ink dark:text-parchment">{title}</p>
-      {hint && <p className="mt-1.5 text-sm text-ink-soft dark:text-parchment/60">{hint}</p>}
-      {action && <div className="mt-5 flex justify-center">{action}</div>}
+      <p className="mt-4 font-medium text-ink">{title}</p>
+      {hint && <p className="mt-1.5 text-sm text-ink-muted">{hint}</p>}
+      {action && <div className="mt-6 flex justify-center">{action}</div>}
     </div>
   );
 }

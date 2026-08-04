@@ -79,19 +79,19 @@ function ReviewCard({ review, token, onPublished }) {
   };
 
   return (
-    <div className="rounded-3xl bg-surface dark:bg-bark-soft border border-sand dark:border-bark-soft shadow-sm p-6">
+    <div className="rounded-md bg-surface border border-line shadow-sm p-6">
       {/* Guest review */}
       <div className="flex items-start justify-between gap-3">
         <div>
-          <h3 className="font-display text-lg font-semibold text-ink dark:text-parchment">
+          <h3 className="text-lg font-semibold text-ink">
             {review.guestName}
           </h3>
           <div className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-1">
-            <span className="text-sm text-clay font-medium">{review.roomType}</span>
+            <span className="text-sm font-medium text-ink-muted">{review.roomType}</span>
             <RatingStars rating={review.rating} />
             <VerifiedStayBadge verified={review.verifiedStay} />
             {formatDate(review.createdAt) && (
-              <span className="text-xs text-ink-soft/80 dark:text-parchment/50">
+              <span className="text-xs text-ink-muted/80">
                 {formatDate(review.createdAt)}
               </span>
             )}
@@ -99,27 +99,27 @@ function ReviewCard({ review, token, onPublished }) {
         </div>
         <div className="flex items-center gap-2">
           {review.adminReplied && (
-            <span className="shrink-0 px-3 py-1 text-xs rounded-full font-semibold bg-forest text-parchment">
+            <span className="eyebrow shrink-0 rounded-xs bg-ridge-800 px-2 py-1 text-quartz-100 dark:bg-ridge-700">
               Replied ✓
             </span>
           )}
           <SentimentBadge sentiment={review.sentiment} />
         </div>
       </div>
-      <p className="mt-3 text-ink-soft dark:text-parchment/80 leading-relaxed">
+      <p className="mt-3 text-ink-muted leading-relaxed">
         &ldquo;{review.reviewText}&rdquo;
       </p>
 
       {/* AI insight — admin-only data from /admin/all */}
       {review.aiTags?.length > 0 && (
         <div className="mt-4 flex flex-wrap items-center gap-2">
-          <span className="text-xs uppercase tracking-wider text-ink-soft/70 dark:text-parchment/40">
+          <span className="text-xs uppercase tracking-wider text-ink-muted/70">
             AI tags
           </span>
           {review.aiTags.map((tag) => (
             <span
               key={tag}
-              className="px-2.5 py-0.5 text-xs rounded-full bg-canvas dark:bg-bark border border-sand dark:border-bark-soft text-ink-soft dark:text-parchment/70"
+              className="rounded-xs border border-line bg-surface-2 px-2 py-0.5 text-xs text-ink-muted"
             >
               {tag}
             </span>
@@ -128,19 +128,19 @@ function ReviewCard({ review, token, onPublished }) {
       )}
 
       {/* Reply workflow */}
-      <div className="mt-5 pt-5 border-t border-sand dark:border-bark">
+      <div className="mt-5 pt-5 border-t border-line">
         <div className="flex items-center justify-between mb-2">
-          <label className="text-sm font-medium text-ink dark:text-parchment">
+          <label className="text-sm font-medium text-ink">
             {review.adminReplied ? "Published reply" : "Reply to guest"}
             {review.adminReplied && formatDate(review.repliedAt) && (
-              <span className="ml-2 text-xs font-normal text-ink-soft/70 dark:text-parchment/50">
+              <span className="ml-2 text-xs font-normal text-ink-muted/70">
                 · {formatDate(review.repliedAt)}
               </span>
             )}
           </label>
           <div className="flex items-center gap-3">
             {!review.adminReplied && review.suggestedReply && (
-              <span className="hidden sm:inline text-xs text-ink-soft/70 dark:text-parchment/40">
+              <span className="hidden sm:inline text-xs text-ink-muted/70">
                 ✨ Drafted by AI — edit freely
               </span>
             )}
@@ -148,7 +148,7 @@ function ReviewCard({ review, token, onPublished }) {
               type="button"
               onClick={regenerate}
               disabled={regenerating}
-              className={`text-xs font-medium text-forest dark:text-moss hover:text-forest-light dark:hover:text-parchment transition-colors disabled:opacity-60 ${
+              className={`text-xs font-medium text-ink-muted transition-colors hover:text-ink disabled:opacity-60 ${
                 regenerating ? "animate-pulse" : ""
               }`}
             >
@@ -165,7 +165,7 @@ function ReviewCard({ review, token, onPublished }) {
               ? ""
               : "No AI draft available for this review — write your own reply."
           }
-          className="w-full px-4 py-2.5 bg-canvas dark:bg-bark border border-sand dark:border-bark-soft rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-forest/40 focus:border-forest text-ink dark:text-parchment placeholder-ink-soft/60 dark:placeholder-parchment/40 transition-colors resize-y"
+          className="w-full px-4 py-2.5 bg-surface-2 border border-line rounded-sm shadow-sm focus:border-accent focus:outline-none text-ink placeholder:text-ink-faint transition-colors resize-y"
         />
         <div className="mt-3 flex justify-end">
           <Button size="sm" onClick={publish} disabled={publishing}>
@@ -230,11 +230,11 @@ function AdminReviewsContent() {
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
       <AdminTabs />
       <div className="mb-8 animate-fade-in-up">
-        <p className="text-sm font-medium uppercase tracking-wider text-clay">Admin</p>
-        <h1 className="mt-2 font-display text-4xl font-semibold text-ink dark:text-parchment">
+        <p className="eyebrow text-ink-faint">Admin</p>
+        <h1 className="mt-2 text-4xl font-semibold text-ink">
           Review Management
         </h1>
-        <p className="mt-2 text-ink-soft dark:text-parchment/70">
+        <p className="mt-2 text-ink-muted">
           AI-analysed guest reviews with drafted replies.
           {!loading && reviews.length > 0 && (
             <span> {pending > 0 ? `${pending} awaiting a reply.` : "All replied — nice work."}</span>
@@ -244,10 +244,10 @@ function AdminReviewsContent() {
 
       {loading ? (
         <div className="flex justify-center py-24">
-          <Loader className="w-8 h-8 text-forest dark:text-moss" />
+          <Loader className="w-8 h-8 text-ink" />
         </div>
       ) : error ? (
-        <p className="text-clay">{error}</p>
+        <p className="text-dawn-500">{error}</p>
       ) : reviews.length === 0 ? (
         <EmptyState
           title="No guest reviews to manage yet"

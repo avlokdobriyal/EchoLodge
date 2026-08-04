@@ -62,20 +62,18 @@ export default function RegisterPage() {
     };
 
     return (
-        <div className="max-w-md mx-auto px-4 py-24">
-            <div className="text-center mb-8">
-                <p className="text-sm font-medium uppercase tracking-wider text-clay">New guest</p>
-                <h1 className="mt-2 font-display text-4xl font-semibold text-ink dark:text-parchment">Create your account</h1>
-                <p className="mt-3 text-ink-soft dark:text-parchment/70">
+        <div className="mx-auto max-w-sm px-4 py-20 sm:py-24">
+            <div className="mb-8">
+                <p className="eyebrow text-ink-faint">New guest</p>
+                <h1 className="mt-4 text-3xl font-semibold tracking-tight text-ink">
+                    Create your account.
+                </h1>
+                <p className="mt-3 text-[15px] leading-relaxed text-ink-muted">
                     An account lets you book rooms, track your stays, and review them afterwards.
                 </p>
             </div>
 
-            <form
-                onSubmit={handleSubmit}
-                noValidate
-                className="rounded-3xl bg-surface dark:bg-bark-soft border border-sand dark:border-bark-soft shadow-sm p-8 space-y-5"
-            >
+            <form onSubmit={handleSubmit} noValidate className="space-y-5">
                 <Input
                     label="Name"
                     type="text"
@@ -104,17 +102,17 @@ export default function RegisterPage() {
                 </Button>
 
                 <div className="flex items-center gap-3 py-1">
-                    <span className="h-px flex-grow bg-sand dark:bg-bark" />
-                    <span className="text-xs uppercase tracking-wider text-ink-soft dark:text-parchment/50">or</span>
-                    <span className="h-px flex-grow bg-sand dark:bg-bark" />
+                    <span className="h-px flex-grow bg-line" />
+                    <span className="eyebrow text-ink-faint">or</span>
+                    <span className="h-px flex-grow bg-line" />
                 </div>
 
                 <button
                     type="button"
                     onClick={() => signIn("google", { callbackUrl: "/rooms" })}
-                    className="w-full inline-flex justify-center items-center gap-3 px-5 py-3 rounded-full border border-sand dark:border-bark-soft bg-surface dark:bg-bark text-ink dark:text-parchment font-medium hover:bg-sand/50 dark:hover:bg-bark-soft transition-colors focus:outline-none focus:ring-2 focus:ring-forest/40"
+                    className="inline-flex w-full items-center justify-center gap-3 rounded-sm border border-line-strong px-5 py-3 text-sm font-medium text-ink transition-colors hover:border-ink-faint hover:bg-surface-2"
                 >
-                    <svg className="w-5 h-5" viewBox="0 0 24 24" aria-hidden="true">
+                    <svg className="h-[18px] w-[18px]" viewBox="0 0 24 24" aria-hidden="true">
                         <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.27-4.74 3.27-8.1Z" />
                         <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.99.66-2.26 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84A11 11 0 0 0 12 23Z" />
                         <path fill="#FBBC05" d="M5.84 14.1a6.6 6.6 0 0 1 0-4.2V7.06H2.18a11 11 0 0 0 0 9.88l3.66-2.84Z" />
@@ -123,9 +121,12 @@ export default function RegisterPage() {
                     Continue with Google
                 </button>
 
-                <p className="text-center text-sm text-ink-soft dark:text-parchment/70">
+                <p className="text-center text-sm text-ink-muted">
                     Already have an account?{" "}
-                    <Link href="/login" className="text-forest dark:text-moss font-medium hover:underline">
+                    <Link
+                        href="/login"
+                        className="font-medium text-accent-text underline-offset-2 hover:underline"
+                    >
                         Sign in
                     </Link>
                 </p>

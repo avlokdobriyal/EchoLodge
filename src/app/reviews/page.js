@@ -2,10 +2,21 @@
 import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import { Button, Loader, Modal, ConfirmDialog, notify } from "@/components/ui/index.js";
+import {
+  Button,
+  Loader,
+  Modal,
+  ConfirmDialog,
+  notify,
+} from "@/components/ui/index.js";
 import ReviewForm from "@/components/ReviewForm";
-import { SentimentBadge, RatingStars, VerifiedStayBadge } from "@/components/ReviewMeta";
+import {
+  SentimentBadge,
+  RatingStars,
+  VerifiedStayBadge,
+} from "@/components/ReviewMeta";
 import EmptyState from "@/components/EmptyState";
+import { Reveal } from "@/components/motion/index.jsx";
 import { API_BASE } from "@/lib/api";
 
 const API = `${API_BASE}/api/reviews`;
@@ -15,19 +26,27 @@ function formatDate(value) {
   if (!value) return null;
   const d = new Date(value);
   if (Number.isNaN(d.getTime())) return null;
-  return d.toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" });
+  return d.toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  });
 }
 
 // --- API helpers ---------------------------------------------------------
 // Write helpers take the backend JWT and send it as a Bearer token.
 function authHeaders(token) {
-  return { "Content-Type": "application/json", Authorization: `Bearer ${token}` };
+  return {
+    "Content-Type": "application/json",
+    Authorization: `Bearer ${token}`,
+  };
 }
 
 // A 401 means the backend token died while the NextAuth session survived —
 // surface that as an actionable message instead of a generic failure.
 function throwForStatus(res, fallback) {
-  if (res.status === 401) throw new Error("Your session has expired — please log out and back in");
+  if (res.status === 401)
+    throw new Error("Your session has expired — please log out and back in");
   if (res.status === 403) throw new Error("You can only modify your own reviews");
   throw new Error(fallback);
 }
@@ -45,7 +64,9 @@ async function apiSearch(q) {
 }
 // The signed-in guest's stays, used to offer a verified-stay link on new reviews.
 async function apiMyBookings(token) {
-  const res = await fetch(BOOKINGS_API, { headers: { Authorization: `Bearer ${token}` } });
+  const res = await fetch(BOOKINGS_API, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
   if (!res.ok) return [];
   return res.json();
 }
@@ -186,7 +207,9 @@ export default function ReviewsPage() {
   const handleCreate = async (data) => {
     try {
       const created = await apiCreate(data, token);
-      setResult((prev) => (prev ? { ...prev, items: [created, ...prev.items] } : prev));
+      setResult((prev) =>
+        prev ? { ...prev, items: [created, ...prev.items] } : prev
+      );
       setIsCreateOpen(false);
       notify("Review added", "success");
     } catch (error) {
@@ -198,7 +221,12 @@ export default function ReviewsPage() {
     try {
       const updated = await apiUpdate(id, data, token);
       setResult((prev) =>
-        prev ? { ...prev, items: prev.items.map((r) => (r.id === id ? updated : r)) } : prev
+        prev
+          ? {
+              ...prev,
+              items: prev.items.map((r) => (r.id === id ? updated : r)),
+            }
+          : prev
       );
       setEditingId(null);
       notify("Review updated", "success");
@@ -223,205 +251,227 @@ export default function ReviewsPage() {
     }
   };
 
+  const scopeTabs = [
+    { key: "all", label: "All reviews" },
+    { key: "mine", label: "My reviews" },
+  ];
+
   return (
-    <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-      <header className="mb-10 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 animate-fade-in-up">
+    <div className="mx-auto max-w-5xl px-4 py-16 sm:px-6 sm:py-20 lg:px-8">
+      <Reveal className="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <p className="text-sm font-medium uppercase tracking-wider text-clay">Guest voices</p>
-          <h1 className="mt-2 font-display text-4xl md:text-5xl font-semibold text-ink dark:text-parchment">
-            Reviews
-          </h1>
-          <p className="mt-3 text-ink-soft dark:text-parchment/70">
-            What guests are saying about their stays at the lodge.
+          <p className="eyebrow text-ink-faint">In their words</p>
+          <h1 className="display mt-4 text-ink">What guests said.</h1>
+          <p className="mt-4 max-w-lg text-[17px] leading-relaxed text-ink-muted">
+            Every review here is written by someone who stayed. The ones marked
+            verified are tied to a real booking.
           </p>
         </div>
         <Button
           onClick={() => (isAuthed ? setIsCreateOpen(true) : requireSignIn())}
           className="shrink-0"
         >
-          + New review
+          Write a review
         </Button>
-      </header>
+      </Reveal>
 
-      <div className="mb-8 flex flex-col sm:flex-row sm:items-center gap-4">
+      <div className="mt-10 flex flex-col gap-4 border-b border-line pb-4 sm:flex-row sm:items-center sm:justify-between">
         {/* Scope toggle — everyone's reviews vs the signed-in guest's own.
             "My reviews" only appears once there's a session to scope to. */}
-        {isAuthed && (
-          <div className="inline-flex shrink-0 rounded-full border border-sand dark:border-bark-soft bg-surface dark:bg-bark-soft p-1">
-            {[
-              { key: "all", label: "All reviews" },
-              { key: "mine", label: "My reviews" },
-            ].map((tab) => (
+        {isAuthed ? (
+          <div className="flex shrink-0 gap-5">
+            {scopeTabs.map((tab) => (
               <button
                 key={tab.key}
                 type="button"
                 onClick={() => setScope(tab.key)}
-                className={`px-4 py-1.5 rounded-full text-sm font-medium transition-colors ${
+                aria-pressed={scope === tab.key}
+                className={`-mb-[17px] border-b-2 pb-4 text-sm font-medium transition-colors ${
                   scope === tab.key
-                    ? "bg-forest text-parchment"
-                    : "text-ink-soft dark:text-parchment/70 hover:text-forest dark:hover:text-moss"
+                    ? "border-accent text-ink"
+                    : "border-transparent text-ink-muted hover:text-ink"
                 }`}
               >
                 {tab.label}
               </button>
             ))}
           </div>
+        ) : (
+          <span />
         )}
 
         {/* Search — hits GET /api/reviews/search for the public list. */}
-        <div className="relative flex-grow">
+        <div className="relative w-full sm:max-w-xs">
           <svg
-            className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-soft/60 dark:text-parchment/40"
+            className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-ink-faint"
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"
             aria-hidden="true"
           >
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-4.35-4.35M17 11a6 6 0 11-12 0 6 6 0 0112 0z" />
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={1.8}
+              d="M21 21l-4.35-4.35M17 11a6 6 0 11-12 0 6 6 0 0112 0z"
+            />
           </svg>
           <input
             type="search"
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
-            placeholder="Search reviews — a word, a room type, a guest…"
+            placeholder="Search a word, room or guest"
             aria-label="Search reviews"
-            className="w-full rounded-full border border-sand dark:border-bark-soft bg-surface dark:bg-bark-soft py-2.5 pl-11 pr-4 text-sm text-ink dark:text-parchment placeholder-ink-soft/60 dark:placeholder-parchment/40 shadow-sm transition-colors focus:border-forest focus:outline-none focus:ring-2 focus:ring-forest/40"
+            className="w-full rounded-sm border border-line bg-surface py-2 pr-3 pl-9 text-sm text-ink transition-colors placeholder:text-ink-faint hover:border-line-strong focus:border-accent focus:outline-none"
           />
         </div>
       </div>
 
-      {isLoading ? (
-        <div className="flex justify-center items-center py-24">
-          <Loader className="w-8 h-8 text-forest dark:text-moss" />
-          <span className="ml-3 text-ink-soft dark:text-parchment/70">Loading reviews...</span>
-        </div>
-      ) : reviews.length === 0 ? (
-        query ? (
-          <EmptyState
-            title={`No reviews match “${query}”`}
-            hint="Try a different word, a room type, or a guest name."
-            action={
-              <Button variant="outline" onClick={() => setSearchInput("")}>
-                Clear search
-              </Button>
-            }
-          />
+      <div className="mt-10">
+        {isLoading ? (
+          <div className="flex items-center justify-center gap-3 py-24 text-ink-muted">
+            <Loader className="h-5 w-5 text-ink-faint" />
+            <span className="text-sm">Loading reviews…</span>
+          </div>
+        ) : reviews.length === 0 ? (
+          query ? (
+            <EmptyState
+              title={`Nothing matches “${query}”`}
+              hint="Try a different word, a room type, or a guest name."
+              action={
+                <Button variant="outline" onClick={() => setSearchInput("")}>
+                  Clear search
+                </Button>
+              }
+            />
+          ) : (
+            <EmptyState
+              title={
+                effectiveScope === "mine"
+                  ? "You haven't written a review yet"
+                  : "No reviews yet"
+              }
+              hint={
+                effectiveScope === "mine"
+                  ? "Tell us how your stay by the river felt."
+                  : "Be the first to say something about the lodge."
+              }
+              action={
+                <Button
+                  variant="outline"
+                  onClick={() =>
+                    isAuthed ? setIsCreateOpen(true) : requireSignIn()
+                  }
+                >
+                  {effectiveScope === "mine"
+                    ? "Write my first review"
+                    : "Write the first one"}
+                </Button>
+              }
+            />
+          )
         ) : (
-          <EmptyState
-            title={
-              effectiveScope === "mine"
-                ? "You haven't written a review yet"
-                : "No reviews yet — write the first one"
-            }
-            hint={
-              effectiveScope === "mine"
-                ? "Share how your stay by the river felt."
-                : "Guest voices make EchoLodge what it is."
-            }
-            action={
-              <Button
-                variant="outline"
-                onClick={() => (isAuthed ? setIsCreateOpen(true) : requireSignIn())}
-              >
-                {effectiveScope === "mine" ? "Write my first review" : "Add the first one"}
-              </Button>
-            }
-          />
-        )
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {reviews.map((review, index) =>
-            editingId === review.id ? (
-              <div
-                key={review.id}
-                className="p-6 rounded-3xl bg-surface dark:bg-bark-soft border border-forest/40 dark:border-moss/40 shadow-md"
-              >
-                <h3 className="font-display text-lg font-semibold text-ink dark:text-parchment mb-4">
-                  Edit review
-                </h3>
-                <ReviewForm
-                  initialValues={review}
-                  submitLabel="Save"
-                  onSubmit={(data) => handleUpdate(review.id, data)}
-                  onCancel={() => setEditingId(null)}
-                />
-              </div>
-            ) : (
-              <div
-                key={review.id}
-                className={`card-lift animate-fade-in-up ${index < 3 ? `delay-${(index + 1) * 100}` : ""} flex flex-col p-6 rounded-3xl bg-surface dark:bg-bark-soft border border-sand dark:border-bark-soft shadow-sm`}
-              >
-                <div className="flex items-start justify-between gap-3 mb-1">
-                  <h3 className="font-display text-xl font-semibold text-ink dark:text-parchment">
-                    {review.guestName}
+          // CSS columns rather than a grid. Reviews vary wildly in length, and
+          // a grid row is only as short as its tallest card — a two-line review
+          // next to a ten-line one leaves a hole. Columns pack them tight, and
+          // break-inside-avoid keeps a card from splitting across the gutter.
+          <div className="columns-1 gap-5 md:columns-2">
+            {reviews.map((review) =>
+              editingId === review.id ? (
+                <div
+                  key={review.id}
+                  className="mb-5 break-inside-avoid rounded-md border border-accent/50 bg-surface p-5"
+                >
+                  <h3 className="mb-4 text-[15px] font-semibold tracking-tight text-ink">
+                    Edit review
                   </h3>
-                  <SentimentBadge sentiment={review.sentiment} />
+                  <ReviewForm
+                    initialValues={review}
+                    submitLabel="Save"
+                    onSubmit={(data) => handleUpdate(review.id, data)}
+                    onCancel={() => setEditingId(null)}
+                  />
                 </div>
-                <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mb-4">
-                  <p className="text-sm text-clay font-medium">{review.roomType}</p>
-                  <RatingStars rating={review.rating} />
-                  <VerifiedStayBadge verified={review.verifiedStay} />
-                </div>
-                <p className="text-ink-soft dark:text-parchment/80 leading-relaxed grow">
-                  &ldquo;{review.reviewText}&rdquo;
-                </p>
-
-                {/* Published admin reply — travels with the public payload */}
-                {review.adminReplied && review.adminReply && (
-                  <div className="mt-4 pl-4 border-l-2 border-forest/50 dark:border-moss/50">
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs font-semibold uppercase tracking-wider text-forest dark:text-moss">
-                        Response from EchoLodge
-                      </span>
-                      {formatDate(review.repliedAt) && (
-                        <span className="text-xs text-ink-soft/70 dark:text-parchment/50">
-                          · {formatDate(review.repliedAt)}
-                        </span>
-                      )}
-                    </div>
-                    <p className="mt-1 text-sm text-ink-soft dark:text-parchment/70 leading-relaxed">
-                      {review.adminReply}
-                    </p>
+              ) : (
+                <article
+                  key={review.id}
+                  className="animate-fade-in mb-5 flex break-inside-avoid flex-col rounded-md border border-line bg-surface p-5"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <RatingStars rating={review.rating} />
+                    <VerifiedStayBadge verified={review.verifiedStay} />
                   </div>
-                )}
 
-                <div className="mt-6 flex items-center justify-between gap-3 pt-4 border-t border-sand dark:border-bark">
-                  {formatDate(review.createdAt) ? (
-                    <span className="text-xs text-ink-soft/80 dark:text-parchment/50">
-                      {formatDate(review.createdAt)}
-                    </span>
-                  ) : (
-                    <span />
-                  )}
-                  {canModify(review) && (
-                    <div className="flex items-center gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setEditingId(review.id)}
-                      >
-                        Edit
-                      </Button>
-                      <Button
-                        variant="danger"
-                        size="sm"
-                        onClick={() => setConfirmDeleteId(review.id)}
-                        disabled={deletingId === review.id}
-                      >
-                        {deletingId === review.id ? "Deleting…" : "Delete"}
-                      </Button>
+                  {/* The quote leads. Attribution follows underneath, the way a
+                      pull-quote works — the words are the reason anyone is
+                      reading this, not the name attached to them. */}
+                  <blockquote className="mt-4 grow text-[15px] leading-relaxed text-ink">
+                    {review.reviewText}
+                  </blockquote>
+
+                  {/* Published admin reply — travels with the public payload */}
+                  {review.adminReplied && review.adminReply && (
+                    <div className="mt-4 border-l-2 border-line-strong pl-4">
+                      <p className="eyebrow text-ink-faint">
+                        Reply from EchoLodge
+                        {formatDate(review.repliedAt)
+                          ? ` · ${formatDate(review.repliedAt)}`
+                          : ""}
+                      </p>
+                      <p className="mt-2 text-sm leading-relaxed text-ink-muted">
+                        {review.adminReply}
+                      </p>
                     </div>
                   )}
-                </div>
-              </div>
-            )
-          )}
-        </div>
-      )}
 
-      <Modal isOpen={isCreateOpen} onClose={() => setIsCreateOpen(false)} title="Add a review">
+                  <div className="mt-5 border-t border-line pt-4">
+                    <div className="flex items-baseline justify-between gap-3">
+                      <p className="text-sm font-medium text-ink">
+                        {review.guestName}
+                      </p>
+                      <SentimentBadge sentiment={review.sentiment} />
+                    </div>
+                    <p className="mt-1 text-xs text-ink-faint">
+                      {review.roomType}
+                      {formatDate(review.createdAt)
+                        ? ` · ${formatDate(review.createdAt)}`
+                        : ""}
+                    </p>
+
+                    {canModify(review) && (
+                      <div className="mt-4 flex items-center gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setEditingId(review.id)}
+                        >
+                          Edit
+                        </Button>
+                        <Button
+                          variant="danger"
+                          size="sm"
+                          onClick={() => setConfirmDeleteId(review.id)}
+                          disabled={deletingId === review.id}
+                        >
+                          {deletingId === review.id ? "Deleting…" : "Delete"}
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                </article>
+              )
+            )}
+          </div>
+        )}
+      </div>
+
+      <Modal
+        isOpen={isCreateOpen}
+        onClose={() => setIsCreateOpen(false)}
+        title="Write a review"
+      >
         <ReviewForm
-          submitLabel="Submit Review"
+          submitLabel="Publish review"
           bookings={myBookings}
           defaultGuestName={session?.user?.name ?? ""}
           onSubmit={handleCreate}

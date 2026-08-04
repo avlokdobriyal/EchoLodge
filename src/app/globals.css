@@ -1,59 +1,223 @@
 @import "tailwindcss";
 @custom-variant dark (&:is(.dark *));
 
-/*
-  EchoLodge design system — "Organic & Warm"
-  Earthy, boutique palette: cream/sand surfaces, deep forest green + terracotta
-  clay accents. Class-based dark mode only (see @custom-variant above); the old
-  prefers-color-scheme block was removed so it no longer fights the .dark toggle.
-*/
+/* ═══════════════════════════════════════════════════════════════════════════
+   EchoLodge design system — "Himalayan Dawn"
+
+   The idea: at sunrise on a ridge, the rock at the top is already warm while
+   the valley below is still blue. The whole palette is that one moment.
+
+   It also gives the interface a rule you can actually navigate by:
+
+       COOL  (ridge)  = information. Structure, text, borders, surfaces.
+       WARM  (dawn)   = action. Anything you can click, and anything live.
+
+   Warm is rationed on purpose. If everything glows, nothing does — and in a
+   booking flow, "what can I press" should never be a guess.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
 @theme {
-  /* Brand palette */
-  --color-cream: #faf5ec;
-  --color-sand: #f1e7d5;
-  --color-clay: #c2683f;
-  --color-clay-dark: #a5502c;
-  --color-forest: #2f5d50;
-  --color-forest-light: #3d7565;
-  --color-moss: #6b8f71;
-  --color-bark: #2a231d;
-  --color-bark-soft: #3a322a;
+  /* ── Quartz — warm lit stone. Canvas and raised surfaces. ─────────────── */
+  --color-quartz-50: #fdfcfa;
+  --color-quartz-100: #f8f5f0;
+  --color-quartz-200: #efeae2;
+  --color-quartz-300: #e2dbd0;
+  --color-quartz-400: #cec4b5;
 
-  /* Warm neutrals for text/borders */
-  --color-ink: #2d2620;
-  --color-ink-soft: #6b5f52;
-  --color-parchment: #efe6d6;
+  /* ── Ridge — cold shadow. Ink, structure, and the dark theme. ─────────── */
+  --color-ridge-50: #eff2f6;
+  --color-ridge-100: #dee4ec;
+  --color-ridge-200: #c2cddb;
+  --color-ridge-300: #9aabc0;
+  --color-ridge-400: #70849e;
+  --color-ridge-500: #526880;
+  --color-ridge-600: #46596f;
+  --color-ridge-700: #3a4d63;
+  --color-ridge-800: #2f4459;
+  --color-ridge-900: #1e242e;
+  --color-ridge-950: #12161c;
 
-  /* Fonts */
+  /* ── Dawn — first light. Actions and live state only. ─────────────────── */
+  --color-dawn-100: #fae6d7;
+  --color-dawn-200: #f4cbae;
+  --color-dawn-300: #eaa87e;
+  --color-dawn-400: #dc8b5c;
+  --color-dawn-500: #c9764a; /* the fill. Takes DARK ink, never white — see below. */
+  --color-dawn-600: #ad5f38;
+  --color-dawn-700: #8b4a2c; /* the only warm that passes AA as text on light */
+
+  /* ── Semantic tokens ───────────────────────────────────────────────────
+     These flip wholesale in .dark, so components can say `bg-surface
+     text-ink` once instead of carrying a dark: twin on every colour. Fewer
+     places for the two themes to drift apart. */
+  --color-canvas: #f8f5f0;
+  --color-surface: #ffffff;
+  --color-surface-2: #f4f1ea;
+  --color-line: #e2dbd0;
+  --color-line-strong: #cec4b5;
+  --color-ink: #1e242e;
+  --color-ink-muted: #526880; /* 5.29:1 on canvas */
+  --color-ink-faint: #70849e; /* decorative / large text only */
+  --color-accent: #c9764a;
+  --color-accent-hover: #ad5f38;
+  --color-accent-text: #8b4a2c; /* warm as *text* must use this. 6.20:1 */
+  --color-on-accent: #12161c; /* dark ink on the warm fill. 5.33:1 */
+
+  /* Failure needs its own colour. Reusing the accent for errors would paint
+     "delete this" and "book this" the same — deeper and redder than dawn, so
+     the two never get confused. 6.8:1 on canvas. */
+  --color-alert: #9e2f28;
+
+  /* ── Type. One grotesk, doing every job. ───────────────────────────────
+     With no serif in the system, hierarchy has to come from size, weight
+     and tracking alone — so the jumps are deliberately large. */
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-  --font-display: var(--font-fraunces);
+  --font-display: var(--font-geist-sans);
 
-  /* Semantic surface tokens (light defaults) */
-  --color-surface: #ffffff;
-  --color-canvas: #faf5ec;
+  /* ── Radius. Architectural, not bubbly. No pills anywhere. ─────────────── */
+  --radius-xs: 3px;
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 20px;
+
+  /* ── Shadow. Tinted with ridge, never neutral black — a cold-shadow
+     palette should cast cold shadows. ─────────────────────────────────── */
+  --shadow-xs: 0 1px 2px rgb(30 36 46 / 0.05);
+  --shadow-sm: 0 2px 6px -1px rgb(30 36 46 / 0.07);
+  --shadow-md: 0 6px 20px -6px rgb(30 36 46 / 0.12);
+  --shadow-lg: 0 20px 50px -20px rgb(30 36 46 / 0.28);
+  --shadow-glow: 0 10px 34px -12px rgb(201 118 74 / 0.45);
+
+  --ease-out-soft: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-/* Warm dark theme: espresso/bark instead of cold slate */
+/* Night on the ridge. Warm accents survive the flip; everything cool deepens. */
 .dark {
-  --color-surface: #211b15;
-  --color-canvas: #171310;
+  --color-canvas: #12161c;
+  --color-surface: #1a212b;
+  --color-surface-2: #212a36;
+  --color-line: #2b3542;
+  --color-line-strong: #3a4a5c;
+  --color-ink: #efeae2;
+  --color-ink-muted: #9aabc0;
+  --color-ink-faint: #70849e;
+  --color-accent: #dc8b5c;
+  --color-accent-hover: #eaa87e;
+  --color-accent-text: #dc8b5c; /* 6.82:1 on the night canvas */
+  --color-on-accent: #12161c;
+  --color-alert: #ef8e7c; /* 7.7:1 on the night canvas */
+
+  --shadow-md: 0 6px 20px -6px rgb(0 0 0 / 0.5);
+  --shadow-lg: 0 20px 50px -20px rgb(0 0 0 / 0.7);
+}
+
+/* ── Base ─────────────────────────────────────────────────────────────────── */
+
+/* Tells the browser to render its own chrome to match. Without this the date
+   picker's calendar icon, the scrollbars and native select menus all stay in
+   light mode — a black-on-black calendar button in the booking form. */
+:root {
+  color-scheme: light;
+}
+.dark {
+  color-scheme: dark;
 }
 
 body {
   background-color: var(--color-canvas);
-  font-family: var(--font-sans), Arial, Helvetica, sans-serif;
+  color: var(--color-ink);
+  font-family: var(--font-sans), system-ui, sans-serif;
+  /* Geist ships proper text figures; opt into contextual alternates. */
+  font-feature-settings: "cv11", "ss01";
+  -webkit-font-smoothing: antialiased;
 }
 
-/* Subtle, calming default for section rhythm */
 ::selection {
-  background-color: var(--color-clay);
-  color: #fff;
+  background-color: var(--color-dawn-500);
+  color: #12161c;
 }
 
-/* --- Motion ---------------------------------------------------------------
-   Gentle entrance animations for page content. Stagger with .delay-* so
-   sections settle one after another rather than all at once. */
+/* One focus treatment for the whole site. Warm, because focus is about what
+   you're able to act on — same logic as the rest of the warm/cool split. */
+:where(a, button, input, select, textarea, [tabindex]):focus-visible {
+  outline: 2px solid var(--color-dawn-500);
+  outline-offset: 2px;
+  border-radius: var(--radius-xs);
+}
+
+/* Headings set their own tracking; large grotesk needs negative tracking or it
+   reads loose and cheap. */
+:where(h1, h2, h3) {
+  letter-spacing: -0.02em;
+  text-wrap: balance;
+}
+
+/* ── Type utilities ───────────────────────────────────────────────────────
+   Declared with @utility so they land in Tailwind's utilities layer and can
+   still be overridden by a later utility on the same element. Written as
+   plain CSS they'd out-specify `text-sm` and silently win. */
+
+@utility display-xl {
+  font-size: clamp(2.75rem, 7vw, 5.25rem);
+  font-weight: 600;
+  letter-spacing: -0.045em;
+  line-height: 0.94;
+}
+
+@utility display {
+  font-size: clamp(2.125rem, 4.5vw, 3.5rem);
+  font-weight: 600;
+  letter-spacing: -0.035em;
+  line-height: 1;
+}
+
+@utility heading {
+  font-size: clamp(1.625rem, 3vw, 2.25rem);
+  font-weight: 600;
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+}
+
+/* The eyebrow is the one structural device in the system. It only ever carries
+   something true — a place, a count, a status — never a decorative label. */
+@utility eyebrow {
+  font-size: 0.6875rem;
+  font-weight: 500;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  line-height: 1;
+}
+
+/* Prices and availability counts sit in columns and change in place, so they
+   need fixed-width figures or the layout twitches on every update. */
+@utility num {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
+
+/* ── The dawn line ────────────────────────────────────────────────────────
+   A hairline that warms toward one end, the way the first light hits a ridge.
+   Used as a section divider so the palette's idea shows up in the structure
+   and not just the colours. */
+@utility rule-dawn {
+  height: 1px;
+  border: 0;
+  background: linear-gradient(
+    to right,
+    var(--color-line) 0%,
+    var(--color-line) 30%,
+    var(--color-dawn-500) 100%
+  );
+  opacity: 0.85;
+}
+
+/* ── Motion ──────────────────────────────────────────────────────────────
+   Scroll-triggered work is handled by the `motion` library (see
+   components/motion). What lives here is the CSS-only baseline: things that
+   must animate before hydration, plus hover states that shouldn't cost JS. */
+
 @keyframes fade-in-up {
   from {
     opacity: 0;
@@ -61,7 +225,7 @@ body {
   }
   to {
     opacity: 1;
-    transform: translateY(0);
+    transform: none;
   }
 }
 
@@ -74,35 +238,116 @@ body {
   }
 }
 
+/* Slow drift on the hero photograph. Long enough (28s) to read as air moving
+   rather than as an animation playing. */
+@keyframes hero-drift {
+  from {
+    transform: scale(1.06) translate3d(0, 0, 0);
+  }
+  to {
+    transform: scale(1.14) translate3d(-1.2%, -1.4%, 0);
+  }
+}
+
+@keyframes shimmer {
+  to {
+    background-position: 200% 0;
+  }
+}
+
 .animate-fade-in-up {
-  animation: fade-in-up 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation: fade-in-up 0.6s var(--ease-out-soft) both;
 }
 
 .animate-fade-in {
   animation: fade-in 0.5s ease-out both;
 }
 
-.delay-100 { animation-delay: 100ms; }
-.delay-200 { animation-delay: 200ms; }
-.delay-300 { animation-delay: 300ms; }
+.animate-hero-drift {
+  animation: hero-drift 28s var(--ease-out-soft) infinite alternate;
+}
 
-/* Lift-on-hover treatment shared by interactive tiles/cards */
+.delay-100 {
+  animation-delay: 100ms;
+}
+.delay-200 {
+  animation-delay: 200ms;
+}
+.delay-300 {
+  animation-delay: 300ms;
+}
+
+/* Skeletons sweep rather than pulse — a pulse reads as "broken", a sweep reads
+   as "working". */
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--color-surface-2) 0%,
+    var(--color-line) 40%,
+    var(--color-surface-2) 80%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.6s linear infinite;
+}
+
 .card-lift {
-  transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.3s ease;
+  transition:
+    transform 0.4s var(--ease-out-soft),
+    box-shadow 0.4s var(--ease-out-soft),
+    border-color 0.3s ease;
 }
 .card-lift:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 20px 40px -18px rgb(47 93 80 / 0.35);
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-lg);
+}
+
+/* Underline that draws from the left on hover. Used on nav and footer links —
+   cheaper and calmer than moving the text itself. */
+.link-underline {
+  position: relative;
+}
+.link-underline::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: -2px;
+  height: 1px;
+  width: 100%;
+  background: currentColor;
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.35s var(--ease-out-soft);
+}
+.link-underline:hover::after,
+.link-underline:focus-visible::after {
+  transform: scaleX(1);
+}
+
+/* Photographs get a fractionally cooler, deeper treatment until hovered, so the
+   image "wakes up" under the cursor without moving. */
+.photo-wake img {
+  transition:
+    transform 0.7s var(--ease-out-soft),
+    filter 0.5s ease;
+  filter: saturate(0.92) contrast(1.02);
+}
+.photo-wake:hover img {
+  transform: scale(1.04);
+  filter: saturate(1.05) contrast(1.04);
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .animate-fade-in-up,
-  .animate-fade-in {
-    animation: none;
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
-  .card-lift,
-  .card-lift:hover {
-    transition: none;
+
+  .card-lift:hover,
+  .photo-wake:hover img {
     transform: none;
   }
 }

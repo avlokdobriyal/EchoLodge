@@ -3,6 +3,12 @@ import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
+import {
+  motion,
+  AnimatePresence,
+  useScroll,
+  useMotionValueEvent,
+} from "motion/react";
 import { useTheme } from "./ThemeContext";
 
 const baseLinks = [
@@ -12,22 +18,48 @@ const baseLinks = [
   { href: "/reviews", label: "Reviews" },
 ];
 
-function ThemeToggle({ theme, toggleTheme }) {
+function ThemeToggle({ theme, toggleTheme, onDark }) {
   return (
     <button
       onClick={toggleTheme}
-      className="p-2 rounded-full bg-sand dark:bg-bark-soft text-forest dark:text-moss hover:bg-parchment dark:hover:bg-bark hover:ring-2 hover:ring-clay/40 transition-all focus:outline-none focus:ring-2 focus:ring-clay/50"
-      aria-label="Toggle theme"
+      className={`rounded-sm p-2 transition-colors ${
+        onDark
+          ? "text-quartz-100/80 hover:bg-quartz-100/10 hover:text-quartz-100"
+          : "text-ink-muted hover:bg-surface-2 hover:text-ink"
+      }`}
+      aria-label={
+        theme === "dark" ? "Switch to light theme" : "Switch to dark theme"
+      }
     >
       {theme === "dark" ? (
         // Sun icon
-        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+        <svg
+          className="h-[18px] w-[18px]"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={1.8}
+            d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"
+          />
         </svg>
       ) : (
         // Moon icon
-        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+        <svg
+          className="h-[18px] w-[18px]"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={1.8}
+            d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"
+          />
         </svg>
       )}
     </button>
@@ -39,8 +71,12 @@ export default function Navbar() {
   const { data: session, status } = useSession();
   const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
   const authed = status === "authenticated";
   const isAdmin = session?.user?.role === "ADMIN";
+
+  const { scrollY } = useScroll();
+  useMotionValueEvent(scrollY, "change", (v) => setScrolled(v > 24));
 
   const links = authed
     ? [
@@ -59,100 +95,191 @@ export default function Navbar() {
     signOut({ callbackUrl: "/login" });
   };
 
+  // On the homepage the bar floats over the hero photograph, so it stays
+  // transparent with light type until you scroll past it. Everywhere else the
+  // page starts on canvas, where light type would be invisible.
+  const onDark = pathname === "/" && !scrolled && !menuOpen;
+
   return (
-    <nav className="sticky top-0 z-50 bg-cream/80 dark:bg-bark/80 backdrop-blur-md border-b border-sand dark:border-bark-soft">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-16">
-          <div className="flex-shrink-0">
-            <Link
-              href="/"
-              onClick={() => setMenuOpen(false)}
-              className="font-display text-2xl font-semibold tracking-tight text-forest dark:text-moss"
+    <nav
+      className={`fixed inset-x-0 top-0 z-50 transition-[background-color,border-color,backdrop-filter] duration-300 ${
+        onDark
+          ? "border-b border-transparent bg-transparent"
+          : "border-b border-line bg-canvas/85 backdrop-blur-md"
+      }`}
+    >
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div className="flex h-16 items-center justify-between">
+          <Link
+            href="/"
+            onClick={() => setMenuOpen(false)}
+            className="group flex flex-shrink-0 items-center gap-2.5"
+          >
+            {/* The ridge mark, same silhouette as the image fallback and the
+                empty states — one shape doing the brand's work everywhere. */}
+            <svg
+              aria-hidden="true"
+              viewBox="0 0 120 60"
+              className={`h-4 w-8 transition-colors ${
+                onDark ? "text-quartz-100" : "text-accent"
+              }`}
+              fill="currentColor"
             >
-              Echo<span className="text-clay">Lodge</span>
-            </Link>
-          </div>
+              <path d="M0 60h120V34l-18-14-13 10-16-18-19 22-12-8-16 14-26 6z" />
+            </svg>
+            <span
+              className={`text-[19px] tracking-tight transition-colors ${
+                onDark ? "text-quartz-100" : "text-ink"
+              }`}
+            >
+              <span className="font-semibold">Echo</span>
+              <span
+                className={`font-normal ${onDark ? "text-quartz-100/70" : "text-ink-muted"}`}
+              >
+                Lodge
+              </span>
+            </span>
+          </Link>
 
           {/* Desktop links */}
-          <div className="hidden md:flex items-center gap-1 lg:gap-2">
+          <div className="hidden items-center gap-1 md:flex">
             {links.map((link) => (
               <Link
                 key={link.href}
                 href={link.href}
-                className={`px-3 py-2 rounded-full text-sm font-medium transition-colors ${
-                  isActive(link.href)
-                    ? "text-forest dark:text-moss bg-sand/60 dark:bg-bark-soft"
-                    : "text-ink-soft dark:text-parchment/70 hover:text-forest dark:hover:text-moss hover:bg-sand/60 dark:hover:bg-bark-soft"
+                aria-current={isActive(link.href) ? "page" : undefined}
+                className={`relative px-3 py-2 text-sm font-medium transition-colors ${
+                  onDark
+                    ? isActive(link.href)
+                      ? "text-quartz-100"
+                      : "text-quartz-100/70 hover:text-quartz-100"
+                    : isActive(link.href)
+                      ? "text-ink"
+                      : "text-ink-muted hover:text-ink"
                 }`}
               >
                 {link.label}
+                {isActive(link.href) && (
+                  // Shared layout id: the marker slides between links on
+                  // navigation instead of blinking out and back in.
+                  <motion.span
+                    layoutId="nav-active"
+                    className="absolute inset-x-3 -bottom-px h-0.5 rounded-xs bg-accent"
+                    transition={{
+                      type: "spring",
+                      stiffness: 380,
+                      damping: 32,
+                    }}
+                  />
+                )}
               </Link>
             ))}
             <span className="ml-1">
-              <ThemeToggle theme={theme} toggleTheme={toggleTheme} />
+              <ThemeToggle
+                theme={theme}
+                toggleTheme={toggleTheme}
+                onDark={onDark}
+              />
             </span>
             {authed && (
               <button
                 onClick={handleLogout}
-                className="ml-1 px-3 py-2 rounded-full text-sm font-medium text-clay hover:bg-clay/10 transition-colors focus:outline-none focus:ring-2 focus:ring-clay/50"
+                className={`ml-1 rounded-sm px-3 py-2 text-sm font-medium transition-colors ${
+                  onDark
+                    ? "text-quartz-100/70 hover:text-quartz-100"
+                    : "text-ink-muted hover:text-ink"
+                }`}
               >
-                Logout
+                Log out
               </button>
             )}
           </div>
 
           {/* Mobile: theme toggle + hamburger */}
-          <div className="flex md:hidden items-center gap-2">
-            <ThemeToggle theme={theme} toggleTheme={toggleTheme} />
+          <div className="flex items-center gap-1 md:hidden">
+            <ThemeToggle
+              theme={theme}
+              toggleTheme={toggleTheme}
+              onDark={onDark}
+            />
             <button
               onClick={() => setMenuOpen((open) => !open)}
-              className="p-2 rounded-full text-ink dark:text-parchment hover:bg-sand/60 dark:hover:bg-bark-soft transition-colors focus:outline-none focus:ring-2 focus:ring-forest/40"
+              className={`rounded-sm p-2 transition-colors ${
+                onDark
+                  ? "text-quartz-100 hover:bg-quartz-100/10"
+                  : "text-ink hover:bg-surface-2"
+              }`}
               aria-label={menuOpen ? "Close menu" : "Open menu"}
               aria-expanded={menuOpen}
             >
-              {menuOpen ? (
-                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              ) : (
-                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-                </svg>
-              )}
+              {/* Two rules that cross into an X — cheaper to read than swapping
+                  between two different icons. */}
+              <span className="relative block h-4 w-5">
+                <motion.span
+                  className="absolute left-0 block h-px w-5 bg-current"
+                  animate={
+                    menuOpen
+                      ? { top: 7, rotate: 45 }
+                      : { top: 3, rotate: 0 }
+                  }
+                  transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
+                />
+                <motion.span
+                  className="absolute left-0 block h-px w-5 bg-current"
+                  animate={
+                    menuOpen
+                      ? { top: 7, rotate: -45 }
+                      : { top: 11, rotate: 0 }
+                  }
+                  transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
+                />
+              </span>
             </button>
           </div>
         </div>
       </div>
 
       {/* Mobile menu panel — stacked links with comfortable tap targets */}
-      {menuOpen && (
-        <div className="md:hidden border-t border-sand dark:border-bark-soft bg-cream/95 dark:bg-bark/95 backdrop-blur-md animate-fade-in">
-          <div className="px-4 py-3 space-y-1">
-            {links.map((link) => (
-              <Link
-                key={link.href}
-                href={link.href}
-                onClick={() => setMenuOpen(false)}
-                className={`block px-4 py-3 rounded-2xl text-base font-medium transition-colors ${
-                  isActive(link.href)
-                    ? "text-forest dark:text-moss bg-sand/60 dark:bg-bark-soft"
-                    : "text-ink-soft dark:text-parchment/80 hover:text-forest dark:hover:text-moss hover:bg-sand/60 dark:hover:bg-bark-soft"
-                }`}
-              >
-                {link.label}
-              </Link>
-            ))}
-            {authed && (
-              <button
-                onClick={handleLogout}
-                className="block w-full text-left px-4 py-3 rounded-2xl text-base font-medium text-clay hover:bg-clay/10 transition-colors"
-              >
-                Logout
-              </button>
-            )}
-          </div>
-        </div>
-      )}
+      <AnimatePresence>
+        {menuOpen && (
+          <motion.div
+            className="overflow-hidden border-t border-line bg-canvas md:hidden"
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
+          >
+            <div className="space-y-0.5 px-4 py-3">
+              {links.map((link) => (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  onClick={() => setMenuOpen(false)}
+                  aria-current={isActive(link.href) ? "page" : undefined}
+                  className={`flex items-center justify-between rounded-sm px-3 py-3 text-[15px] font-medium transition-colors ${
+                    isActive(link.href)
+                      ? "bg-surface-2 text-ink"
+                      : "text-ink-muted hover:bg-surface-2 hover:text-ink"
+                  }`}
+                >
+                  {link.label}
+                  {isActive(link.href) && (
+                    <span className="h-1.5 w-1.5 rounded-full bg-accent" />
+                  )}
+                </Link>
+              ))}
+              {authed && (
+                <button
+                  onClick={handleLogout}
+                  className="block w-full rounded-sm px-3 py-3 text-left text-[15px] font-medium text-ink-muted transition-colors hover:bg-surface-2 hover:text-ink"
+                >
+                  Log out
+                </button>
+              )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </nav>
   );
 }

@@ -14,8 +14,6 @@ export const CATEGORY_META = {
     highlights: ["Ganga-facing balcony", "Sunrise aarti views", "Complimentary terrace access"],
     tag: "River view",
     image: "/rooms/ganga-view.jpg",
-    accent: "from-forest/90 to-forest-light/80",
-    chip: "bg-forest/10 text-forest dark:bg-moss/20 dark:text-moss",
     order: 1,
   },
   "Standard Balcony": {
@@ -25,8 +23,6 @@ export const CATEGORY_META = {
     highlights: ["Garden-side balcony", "Warm minimalist interiors", "Complimentary terrace access"],
     tag: "Best value",
     image: "/rooms/standard-balcony.jpg",
-    accent: "from-clay/80 to-clay-dark/80",
-    chip: "bg-sand text-ink-soft dark:bg-bark dark:text-parchment/70",
     order: 2,
   },
   "Super Deluxe Ganga View Suite": {
@@ -36,20 +32,22 @@ export const CATEGORY_META = {
     highlights: ["Panoramic Ganga suite", "Separate lounge area", "Complimentary terrace access"],
     tag: "Signature",
     image: "/rooms/suite.jpg",
-    accent: "from-bark/90 to-bark-soft/90",
-    chip: "bg-clay/15 text-clay-dark dark:bg-clay/25 dark:text-clay",
     order: 3,
   },
 };
 
 // Used for any category present in the database but not described above.
+//
+// Per-category accent colours used to live here. They were dropped: colouring
+// each room type differently implied a distinction the categories don't
+// actually have, and it fought the one rule the palette runs on — warm means
+// something is actionable. Categories are told apart by their photograph and
+// their name, which is how a guest tells them apart anyway.
 export const FALLBACK_CATEGORY_META = {
   tagline: "",
   highlights: [],
   tag: null,
   image: null,
-  accent: "from-forest/90 to-forest-light/80",
-  chip: "bg-sand text-ink-soft dark:bg-bark dark:text-parchment/70",
   order: 99,
 };
 

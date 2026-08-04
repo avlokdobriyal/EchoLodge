@@ -19,8 +19,8 @@ export default function RequireAuth({ children }) {
   if (status === "loading" || status === "unauthenticated") {
     return (
       <div className="flex justify-center items-center py-32">
-        <Loader className="w-8 h-8 text-forest dark:text-moss" />
-        <span className="ml-3 text-ink-soft dark:text-parchment/70">Checking your session…</span>
+        <Loader className="w-8 h-8 text-ink" />
+        <span className="ml-3 text-ink-muted">Checking your session…</span>
       </div>
     );
   }
