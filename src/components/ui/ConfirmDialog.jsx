@@ -26,8 +26,8 @@ export default function ConfirmDialog({
 }) {
   return (
     <Modal isOpen={isOpen} onClose={busy ? () => {} : onClose} title={title}>
-      <p className="text-ink-soft dark:text-parchment/70 leading-relaxed">{message}</p>
-      <div className="mt-6 flex justify-end gap-3">
+      <p className="text-[15px] leading-relaxed text-ink-muted">{message}</p>
+      <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end sm:gap-3">
         <Button variant="outline" onClick={onClose} disabled={busy}>
           Cancel
         </Button>

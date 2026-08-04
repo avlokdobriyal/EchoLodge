@@ -7,21 +7,24 @@ const TABS = [
   { href: "/admin/reviews", label: "Reviews" },
 ];
 
-// Section switcher shown at the top of every admin page.
+// Section switcher shown at the top of every admin page. The active tab is
+// marked with a warm underline rather than a filled chip — admin screens are
+// dense, and a rule reads as position without adding another block of colour.
 export default function AdminTabs() {
   const pathname = usePathname();
   return (
-    <div className="inline-flex gap-1 p-1 rounded-full bg-sand/60 dark:bg-bark mb-8">
+    <div className="mb-8 flex gap-6 border-b border-line">
       {TABS.map((tab) => {
         const active = pathname === tab.href;
         return (
           <Link
             key={tab.href}
             href={tab.href}
-            className={`px-4 py-1.5 rounded-full text-sm font-medium transition-colors ${
+            aria-current={active ? "page" : undefined}
+            className={`-mb-px border-b-2 px-1 pb-3 text-sm font-medium transition-colors ${
               active
-                ? "bg-surface dark:bg-bark-soft text-forest dark:text-moss shadow-sm"
-                : "text-ink-soft dark:text-parchment/60 hover:text-forest dark:hover:text-moss"
+                ? "border-accent text-ink"
+                : "border-transparent text-ink-muted hover:border-line-strong hover:text-ink"
             }`}
           >
             {tab.label}
