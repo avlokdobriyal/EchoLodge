@@ -24,12 +24,6 @@ afterwards. Booking here means no travel-site commission in the middle.
 
 ---
 
-## Demo Video
-
-**[Demo Video](insert-youtube-link)**
-
----
-
 ## Screenshots
 
 ![Home Screen](./public/screenshots/home.png)
