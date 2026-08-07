@@ -520,9 +520,9 @@ echolodge/
 │
 ├── public/
 │   ├── rooms/                    # Room photography
-│   └── screenshots/              # README screenshots
+│   ├── screenshots/              # README screenshots
+│   └── database/                 # ER diagram
 │
-├── EchoLodge_DatabaseSchema.png  # ER diagram
 ├── PROMPTS.md                    # Gemini prompt iterations
 └── README.md
 ```
@@ -536,7 +536,7 @@ points at the booking that justifies it, and a booking points at both the room
 and the guest. Supabase's managed Postgres also provides a transaction pooler,
 which keeps connections stable for an API made of many short-lived requests.
 
-[![EchoLodge database schema](./EchoLodge_DatabaseSchema.png)](./EchoLodge_DatabaseSchema.png)
+[![EchoLodge database schema](./public/database/EchoLodge_DatabaseSchema.png)](./public/database/EchoLodge_DatabaseSchema.png)
 
 *Click the diagram to view it full size. Source of truth is
 [`backend/prisma/schema.prisma`](./backend/prisma/schema.prisma).*
