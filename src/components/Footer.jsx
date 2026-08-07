@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Logo from "./Logo";
 
 const explore = [
   { href: "/rooms", label: "Rooms" },
@@ -14,20 +15,11 @@ export default function Footer() {
       <div className="mx-auto max-w-7xl px-4 py-14 sm:px-6 lg:px-8">
         <div className="grid grid-cols-2 gap-10 md:grid-cols-4">
           <div className="col-span-2 md:col-span-2">
-            <div className="flex items-center gap-2.5">
-              <svg
-                aria-hidden="true"
-                viewBox="0 0 120 60"
-                className="h-4 w-8 text-accent"
-                fill="currentColor"
-              >
-                <path d="M0 60h120V34l-18-14-13 10-16-18-19 22-12-8-16 14-26 6z" />
-              </svg>
-              <span className="text-lg tracking-tight text-ink">
-                <span className="font-semibold">Echo</span>
-                <span className="font-normal text-ink-muted">Lodge</span>
-              </span>
-            </div>
+            <Logo
+              className="text-ink"
+              markClassName="h-5 w-[26px]"
+              wordClassName="text-lg"
+            />
             <p className="mt-4 max-w-xs text-sm leading-relaxed text-ink-muted">
               Twelve rooms on the river in Laxman Jhula. Family-run, booked
               direct, no commission in the middle.

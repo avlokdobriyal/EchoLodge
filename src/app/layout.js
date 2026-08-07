@@ -18,7 +18,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata = {
-  title: "EchoLodge — riverside rooms in Rishikesh, booked direct",
+  title: "EchoLodge - Cozy Stays",
   description:
     "A small riverside lodge in Laxman Jhula, Rishikesh. Twelve rooms across three categories, bookable directly with us — no booking-site commission in the middle.",
 };

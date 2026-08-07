@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
+  <title>EchoLodge</title>
+  <!--
+    The EchoLodge mark on a solid tile.
+
+    A transparent favicon would need the stroke to adapt to the browser's own
+    chrome, which is unreliable across browsers. A filled tile in the brand's
+    night-ridge colour reads on light and dark chrome alike, and matches how the
+    icon appears on a phone home screen.
+
+    Strokes are drawn directly in 32-unit space rather than scaled from the full
+    logo, so they stay thick enough to survive 16px.
+  -->
+  <rect width="32" height="32" rx="7" fill="#12161c"/>
+  <!--
+    The gap between ridge and reflection is 3.2 units against combined stroke
+    radii of 2.4, leaving 0.8 clear. Sized that way deliberately: at the logo's
+    own proportions the two strokes touch, which looks intentional at 40px and
+    turns into a solid blob at 16.
+  -->
+  <path d="M5 17 L11.2 8.8 L15.3 12.9 L20.1 6.7 L27 17"
+        fill="none" stroke="#f8f5f0" stroke-width="2.6"
+        stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M5 20.2 L11.2 24.5 L15.3 22.4 L20.1 25.7 L27 20.2"
+        fill="none" stroke="#dc8b5c" stroke-width="2.2"
+        stroke-linecap="round" stroke-linejoin="round" opacity="0.9"/>
+</svg>

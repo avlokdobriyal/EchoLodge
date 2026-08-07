@@ -10,6 +10,7 @@ import {
   useMotionValueEvent,
 } from "motion/react";
 import { useTheme } from "./ThemeContext";
+import Logo from "./Logo";
 
 const baseLinks = [
   { href: "/", label: "Home" },
@@ -110,35 +111,18 @@ export default function Navbar() {
     >
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="flex h-16 items-center justify-between">
+          {/* The lockup is one colour all the way through — the parent sets it
+              and Logo inherits, so floating over the hero photograph is a
+              single class change rather than four. */}
           <Link
             href="/"
             onClick={() => setMenuOpen(false)}
-            className="group flex flex-shrink-0 items-center gap-2.5"
+            aria-label="EchoLodge — home"
+            className={`flex flex-shrink-0 transition-colors ${
+              onDark ? "text-quartz-100" : "text-ink"
+            }`}
           >
-            {/* The ridge mark, same silhouette as the image fallback and the
-                empty states — one shape doing the brand's work everywhere. */}
-            <svg
-              aria-hidden="true"
-              viewBox="0 0 120 60"
-              className={`h-4 w-8 transition-colors ${
-                onDark ? "text-quartz-100" : "text-accent"
-              }`}
-              fill="currentColor"
-            >
-              <path d="M0 60h120V34l-18-14-13 10-16-18-19 22-12-8-16 14-26 6z" />
-            </svg>
-            <span
-              className={`text-[19px] tracking-tight transition-colors ${
-                onDark ? "text-quartz-100" : "text-ink"
-              }`}
-            >
-              <span className="font-semibold">Echo</span>
-              <span
-                className={`font-normal ${onDark ? "text-quartz-100/70" : "text-ink-muted"}`}
-              >
-                Lodge
-              </span>
-            </span>
+            <Logo />
           </Link>
 
           {/* Desktop links */}
